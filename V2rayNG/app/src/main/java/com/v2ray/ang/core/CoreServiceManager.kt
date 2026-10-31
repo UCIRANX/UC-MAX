@@ -128,7 +128,8 @@ object CoreServiceManager {
 
     @Throws(Exception::class)
     private fun launchCore(service: Service, vpnInterface: ParcelFileDescriptor?, isReload: Boolean = false) {
-        val selectedGuid = MmkvManager.getSelectServer() ?: error("No server selected")
+        val selectedGuid = MmkvManager.getSelectServer()
+            ?: if (ConnectionModeManager.currentMode() == com.v2ray.ang.enums.ConnectionMode.PSIPHON_ONLY) "" else error("No server selected")
         val plan = ConnectionModeManager.plan(selectedGuid)
         val guid = plan.guid
         val config = MmkvManager.decodeServerConfig(guid) ?: error("Failed to decode server config")

@@ -193,7 +193,8 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun startV2Ray() {
-        if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
+        val uiState = mainViewModel.uiState.value
+        if (uiState.selectedGuid.isNullOrEmpty() && uiState.connectionMode != com.v2ray.ang.enums.ConnectionMode.PSIPHON_ONLY) {
             toast(R.string.title_file_chooser)
             return
         }

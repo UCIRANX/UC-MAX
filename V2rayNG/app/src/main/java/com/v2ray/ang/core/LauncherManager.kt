@@ -22,7 +22,9 @@ import com.v2ray.ang.util.Utils
 object LauncherManager {
 
     fun startServiceFromToggle(context: Context): Boolean {
-        if (MmkvManager.getSelectServer().isNullOrEmpty()) {
+        if (ConnectionModeManager.currentMode() != com.v2ray.ang.enums.ConnectionMode.PSIPHON_ONLY &&
+            MmkvManager.getSelectServer().isNullOrEmpty()
+        ) {
             context.toast(R.string.app_tile_first_use)
             return false
         }
@@ -73,11 +75,15 @@ object LauncherManager {
         // Note: isRunning check is removed here to avoid loading Native libraries in the UI process.
         // The check is performed in CoreServiceManager when the service starts in the daemon process.
 
-        val guid = MmkvManager.getSelectServer()
-            ?: run {
-                LogUtil.e(AppConfig.TAG, "LauncherManager: No server selected")
-                error(context.getString(R.string.app_tile_first_use))
-            }
+        val guid = if (ConnectionModeManager.currentMode() == com.v2ray.ang.enums.ConnectionMode.PSIPHON_ONLY) {
+            PsiphonCoreManager.createHopProfile()
+        } else {
+            MmkvManager.getSelectServer()
+                ?: run {
+                    LogUtil.e(AppConfig.TAG, "LauncherManager: No server selected")
+                    error(context.getString(R.string.app_tile_first_use))
+                }
+        }
 
         val config = MmkvManager.decodeServerConfig(guid)
             ?: run {
