@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * مدیریت هستهٔ Psiphon (باینری libpsiphon.so).
@@ -26,7 +27,8 @@ object PsiphonCoreManager {
     const val LOCAL_SOCKS_HOST = "127.0.0.1"
     const val LOCAL_SOCKS_PORT = 10850
 
-    private const val START_TIMEOUT_MS = 30_000L
+    // Time allowed for the tunnel to connect (not just the SOCKS port to open).
+    private const val START_TIMEOUT_MS = 90_000L
     private const val PROPAGATION_CHANNEL_ID = "FFFFFFFFFFFFFFFF"
     private const val SPONSOR_ID = "FFFFFFFFFFFFFFFF"
 
@@ -62,6 +64,17 @@ object PsiphonCoreManager {
         }
 
         val ready = CompletableDeferred<Unit>()
+        // Ready only when BOTH the SOCKS port is listening AND the tunnel is connected.
+        // A listening port alone is not enough: until a server is reached the local SOCKS
+        // listener closes client connections, which made the connection test fail with
+        // "read/write on closed pipe" right after startup.
+        val portReady = AtomicBoolean(false)
+        val tunnelConnected = AtomicBoolean(false)
+        fun checkReady() {
+            if (portReady.get() && tunnelConnected.get()) {
+                ready.complete(Unit)
+            }
+        }
         val host = object : PsiphonTunnel.HostService {
             override fun getContext(): Context = context.applicationContext
 
@@ -70,7 +83,8 @@ object PsiphonCoreManager {
             override fun onListeningSocksProxyPort(port: Int) {
                 if (port == LOCAL_SOCKS_PORT) {
                     LogUtil.i(AppConfig.TAG, "Psiphon: پورت SOCKS آماده شد ($port)")
-                    ready.complete(Unit)
+                    portReady.set(true)
+                    checkReady()
                 } else {
                     ready.completeExceptionally(IllegalStateException("پورت غیرمنتظرهٔ Psiphon: $port"))
                 }
@@ -82,6 +96,8 @@ object PsiphonCoreManager {
 
             override fun onConnected() {
                 LogUtil.i(AppConfig.TAG, "Psiphon: تونل برقرار شد")
+                tunnelConnected.set(true)
+                checkReady()
             }
 
             override fun onDiagnosticMessage(message: String) {
