@@ -2,6 +2,7 @@ package com.v2ray.ang.core
 
 import android.content.Context
 import ca.psiphon.PsiphonTunnel
+import com.psiphon3.psiphonlibrary.EgressRegionStore
 import com.psiphon3.psiphonlibrary.EmbeddedValues
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -112,7 +113,13 @@ object PsiphonCoreManager {
                     LogUtil.d(AppConfig.TAG, "Psiphon: $message")
                 }
 
-                override fun onExiting() {
+                override fun onAvailableEgressRegions(regions: List<String>) {
+                // The region list must reach RegionListPreference; without this it stays empty
+                // (only "Best performance" is shown).
+                EgressRegionStore.saveKnownRegions(context, regions)
+            }
+
+            override fun onExiting() {
                     LogUtil.w(AppConfig.TAG, "Psiphon: پروسه خاتمه یافت")
                     ready.completeExceptionally(IllegalStateException("پروسهٔ Psiphon قبل از آماده شدن خاتمه یافت"))
                 }
@@ -188,6 +195,8 @@ object PsiphonCoreManager {
             .put("RemoteServerListDownloadFilename", File(context.filesDir, "psiphon_remote_server_list").absolutePath)
             .put("RemoteServerListUrls", JSONArray(EmbeddedValues.REMOTE_SERVER_LIST_URLS_JSON))
             .put("RemoteServerListSignaturePublicKey", EmbeddedValues.REMOTE_SERVER_LIST_SIGNATURE_PUBLIC_KEY)
+            // Region chosen in the Options tab; empty means "best performance" (any region).
+            .put("EgressRegion", EgressRegionStore.getSelectedRegion(context))
         if (!upstreamProxyUrl.isNullOrBlank()) {
             json.put("UpstreamProxyUrl", upstreamProxyUrl)
         }
