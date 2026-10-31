@@ -67,3 +67,9 @@ V2rayNG/app/google-services.json
 # Ignore OS-specific files
 Thumbs.db
 .DS_Store
+
+# فایل‌های لازم برای بیلد (wrapper و کتابخانه‌های shirokhorshid)
+!**/gradle/wrapper/gradle-wrapper.jar
+!V2rayNG/shirokhorshid/libs/*.jar
+!V2rayNG/tray/**/*.jar
+!V2rayNG/shirokhorshid/libs/*.aar

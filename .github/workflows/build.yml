@@ -205,8 +205,6 @@ jobs:
           cd V2rayNG
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           chmod +x gradlew
-          PSIPHON_PROPAGATION_CHANNEL_ID='${{ secrets.PSIPHON_PROPAGATION_CHANNEL_ID }}' \
-          PSIPHON_SPONSOR_ID='${{ secrets.PSIPHON_SPONSOR_ID }}' \
           ./gradlew assemblePlaystoreRelease \
             -Pandroid.injected.signing.store.file=${{ steps.keystore.outputs.path }} \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \

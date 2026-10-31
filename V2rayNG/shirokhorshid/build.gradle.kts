@@ -45,8 +45,8 @@ public class EmbeddedValues {
 val embeddedOut = file("src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java")
 // مقادیر پیش‌فرض از پروژه UC-Guard گرفته شده‌اند (همان‌هایی که در آن پروژه با موفقیت وصل می‌شوند).
 // این مقادیر عمومی‌اند و نیازی به Secrets ندارند. اگر لازم شد با متغیرهای محیطی بازنویسی می‌شوند.
-val propagationId = System.getenv("PSIPHON_PROPAGATION_CHANNEL_ID") ?: "FFFFFFFFFFFFFFFF"
-val sponsorId = System.getenv("PSIPHON_SPONSOR_ID") ?: "FFFFFFFFFFFFFFFF"
+val propagationId = System.getenv("PSIPHON_PROPAGATION_CHANNEL_ID")?.takeIf { it.isNotBlank() } ?: "FFFFFFFFFFFFFFFF"
+val sponsorId = System.getenv("PSIPHON_SPONSOR_ID")?.takeIf { it.isNotBlank() } ?: "FFFFFFFFFFFFFFFF"
 val remoteUrlsJson = System.getenv("PSIPHON_REMOTE_SERVER_LIST_URLS_JSON") ?: """[{"URL":"aHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tLy9wc2lwaG9uL3dlYi9tanI0LXAyM3ItcHV3bC9zZXJ2ZXJfbGlzdF9jb21wcmVzc2Vk"}]"""
 val remoteSigKey = System.getenv("PSIPHON_REMOTE_SERVER_LIST_SIGNATURE_PUBLIC_KEY") ?: "MIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAt7Ls+/39r+T6zNW7GiVpJfzq/xvL9SBH5rIFnk0RXYEYavax3WS6HOD35eTAqn8AniOwiH+DOkvgSKF2caqk/y1dfq47Pdymtwzp9ikpB1C5OfAysXzBiwVJlCdajBKvBZDerV1cMvRzCKvKwRmvDmHgphQQ7WfXIGbRbmmk6opMBh3roE42KcotLFtqp0RRwLtcBRNtCdsrVsjiI1Lqz/lH+T61sGjSjQ3CHMuZYSQJZo/KrvzgQXpkaCTdbObxHqb6/+i1qaVOfEsvjoiyzTxJADvSytVtcTjijhPEV6XskJVHE1Zgl+7rATr/pDQkw6DPCNBS1+Y6fy7GstZALQXwEDN/qhQI9kWkHijT8ns+i1vGg00Mk/6J75arLhqcodWsdeG/M/moWgqQAnlZAGVtJI1OgeF5fsPpXu4kctOfuZlGjVZXQNW34aOzm8r8S0eVZitPlbhcPiR4gT/aSMz/wd8lZlzZYsje/Jr8u/YtlwjjreZrGRmG8KMOzukV3lLmMppXFMvl4bxv6YFEmIuTsOhbLTwFgh7KYNjodLj/LsqRVfwz31PgWQFTEPICV7GCvgVlPRxnofqKSjgTWI4mxDhBpVcATvaoBl1L/6WLbFvBsoAUBItWwctO2xalKxF5szhGm8lccoc5MZr8kfE0uxMgsxz4er68iCID+rsCAQM="
 val generateEmbedded = tasks.register("generateEmbeddedValues") {
