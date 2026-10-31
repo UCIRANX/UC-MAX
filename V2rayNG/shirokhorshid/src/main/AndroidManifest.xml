@@ -229,7 +229,7 @@
             android:name=".log.LoggingContentProvider"
             android:exported="false"
             android:process=":LoggingContentProvider"
-            android:authorities="uciran.v2ray.psiphon.LoggingContentProvider" />
+            android:authorities="com.shirokhorshid.vpn.LoggingContentProvider" />
         <!-- PsiphonUpdateReceiver receives intents that trigger upgrade checking. -->
         <receiver android:name=".PsiphonUpdateReceiver"
             android:exported="false">

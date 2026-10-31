@@ -1,0 +1,172 @@
+# بیلد UC MAX: سه APK جدا (arm64-v8a، armeabi-v7a و نسخه شامل هر دو)
+# امضا با keystore ذخیره‌شده در Secrets، بدون هیچ فایل محرمانه داخل ریپو.
+name: Build UC MAX
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-psiphon:
+    name: Build Psiphon binary (libpsiphon.so)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goarch: arm64
+            goarm: ""
+            abi: arm64-v8a
+          - goarch: arm
+            goarm: "7"
+            abi: armeabi-v7a
+    steps:
+      - name: Checkout tunnel-core
+        uses: actions/checkout@v4
+        with:
+          repository: shirokhorshid/psiphon-tunnel-core
+          ref: shirokhorshid
+          path: psiphon-tunnel-core
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: false
+
+      - name: Build ConsoleClient as a static Android binary
+        working-directory: psiphon-tunnel-core
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p "$RUNNER_TEMP/out/${{ matrix.abi }}"
+          go build -trimpath -tags PSIPHON_ENABLE_INPROXY -ldflags "-s -w" \
+            -o "$RUNNER_TEMP/out/${{ matrix.abi }}/libpsiphon.so" ./ConsoleClient
+          ls -la "$RUNNER_TEMP/out/${{ matrix.abi }}"
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: psiphon-${{ matrix.abi }}
+          path: ${{ runner.temp }}/out/${{ matrix.abi }}/libpsiphon.so
+
+  build:
+    needs: build-psiphon
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+
+      - name: Install NDK
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --channel=0 --install "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> $GITHUB_ENV
+
+      - name: Download Psiphon binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: psiphon-*
+          path: psiphon-bin
+
+      - name: Place Psiphon binaries into jniLibs
+        run: |
+          for abi in arm64-v8a armeabi-v7a; do
+            mkdir -p "V2rayNG/shirokhorshid/src/main/jniLibs/$abi"
+            cp "psiphon-bin/psiphon-$abi/libpsiphon.so" "V2rayNG/shirokhorshid/src/main/jniLibs/$abi/libpsiphon.so"
+          done
+
+      - name: Fetch native sources (hev-socks5-tunnel and AndroidLibXrayLite)
+        run: |
+          # در زیپ، پوشه‌های submodule خالی هستند؛ آن‌ها را مستقیم از GitHub می‌گیریم
+          rm -rf hev-socks5-tunnel AndroidLibXrayLite
+          git clone --recursive --depth 1 https://github.com/heiher/hev-socks5-tunnel hev-socks5-tunnel
+          git clone --depth 1 https://github.com/2dust/AndroidLibXrayLite AndroidLibXrayLite
+          git -C AndroidLibXrayLite fetch --tags --depth 1 origin 'refs/tags/*:refs/tags/*' || true
+
+      - name: Build libhevtun
+        run: bash compile-hevtun.sh
+
+      - name: Copy libhevtun into app
+        run: cp -r libs V2rayNG/app/
+
+      - name: Download libv2ray (Xray core)
+        run: |
+          cd AndroidLibXrayLite
+          TAG=$(git describe --tags --abbrev=0)
+          echo "Xray core tag: $TAG"
+          cd ..
+          mkdir -p V2rayNG/app/libs
+          curl -fL -o V2rayNG/app/libs/libv2ray.aar \
+            "https://github.com/2dust/AndroidLibXrayLite/releases/download/${TAG}/libv2ray.aar"
+
+      - name: Decode keystore
+        id: keystore
+        run: |
+          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/uc_max.jks"
+          echo "path=$RUNNER_TEMP/uc_max.jks" >> "$GITHUB_OUTPUT"
+
+      - name: Build three APKs
+        env:
+          APP_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          cd V2rayNG
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          chmod +x gradlew
+          ./gradlew assemblePlaystoreRelease \
+            -Pandroid.injected.signing.store.file=${{ steps.keystore.outputs.path }} \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+      - name: Collect APKs
+        run: |
+          mkdir -p apks
+          cp V2rayNG/app/build/outputs/apk/playstore/release/UC-MAX_*_arm64-v8a.apk apks/
+          cp V2rayNG/app/build/outputs/apk/playstore/release/UC-MAX_*_armeabi-v7a.apk apks/
+          cp V2rayNG/app/build/outputs/apk/playstore/release/UC-MAX_*_universal.apk apks/
+          ls -la apks
+
+      - name: Upload arm64-v8a
+        uses: actions/upload-artifact@v4
+        with:
+          name: UC-MAX-arm64-v8a
+          path: apks/*arm64-v8a*.apk
+
+      - name: Upload armeabi-v7a
+        uses: actions/upload-artifact@v4
+        with:
+          name: UC-MAX-armeabi-v7a
+          path: apks/*armeabi-v7a*.apk
+
+      - name: Upload universal
+        uses: actions/upload-artifact@v4
+        with:
+          name: UC-MAX-universal
+          path: apks/*universal*.apk
+
+      - name: Create GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apks/*.apk
