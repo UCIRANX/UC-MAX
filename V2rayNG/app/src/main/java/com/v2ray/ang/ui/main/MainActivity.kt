@@ -169,7 +169,8 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun handleFabAction() {
-        if (mainViewModel.uiState.value.isRunning) {
+        val state = mainViewModel.uiState.value
+        if (state.isRunning || state.isConnecting) {
             LauncherManager.stopService(this)
         } else {
             requestServiceStart()
@@ -200,6 +201,7 @@ class MainActivity : HelperBaseComponentActivity() {
         ) {
             checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
         }
+        mainViewModel.setConnecting(true)
         LauncherManager.startService(this)
     }
 

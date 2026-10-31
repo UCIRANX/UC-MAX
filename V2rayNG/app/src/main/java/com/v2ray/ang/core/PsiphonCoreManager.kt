@@ -299,22 +299,28 @@ object PsiphonCoreManager {
         }
     }
 
-    /** شناسهٔ پروفایل هاپ محلی Psiphon را برمی‌گرداند؛ اگر نبود می‌سازد (بدون تکرار). */
+    /** شناسهٔ ثابت پروفایل داخلی هاپ Psiphon؛ در لیست سرورها دیده نمی‌شود. */
+    const val HOP_GUID = "uc-max-psiphon-local-hop"
+
+    /** پروفایل داخلی هاپ Psiphon را می‌سازد/به‌روز می‌کند و شناسه‌اش را برمی‌گرداند. */
     fun createHopProfile(): String {
-        findHopProfileGuid()?.let { return it }
+        // Remove visible copies created by previous versions.
+        MmkvManager.decodeAllServerList().forEach { guid ->
+            if (guid != HOP_GUID && MmkvManager.decodeServerConfig(guid)?.let(::isLocalHop) == true) {
+                MmkvManager.removeServer(guid)
+            }
+        }
         val profile = ProfileItem.create(EConfigType.SOCKS).apply {
             remarks = "Psiphon (local)"
             server = LOCAL_SOCKS_HOST
             serverPort = LOCAL_SOCKS_PORT.toString()
         }
-        return MmkvManager.encodeServerConfig("", profile)
+        return MmkvManager.encodeInternalServerConfig(HOP_GUID, profile)
     }
 
-    /** پیدا کردن پروفایل هاپ موجود بدون ساخت مجدد */
+    /** پیدا کردن پروفایل داخلی هاپ بدون ساخت مجدد */
     fun findHopProfileGuid(): String? =
-        MmkvManager.decodeAllServerList().firstOrNull { guid ->
-            MmkvManager.decodeServerConfig(guid)?.let(::isLocalHop) == true
-        }
+        HOP_GUID.takeIf { MmkvManager.decodeServerConfig(it) != null }
 
     private fun buildConfigJson(context: Context, upstreamProxyUrl: String?): String {
         val json = JSONObject()

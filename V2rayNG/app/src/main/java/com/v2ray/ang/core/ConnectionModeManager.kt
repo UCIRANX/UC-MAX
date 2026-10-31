@@ -11,11 +11,15 @@ import com.v2ray.ang.handler.MmkvManager
  *
  * ترتیب زنجیره (PROXYCHAIN): عضو اول خروجی نهایی است و عضو آخر اولین هاپ از سمت گوشی.
  * بنابراین برای «V2ray از طریق Psiphon» ترتیب = [پروفایل V2ray، هاپ Psiphon] است.
+ * پروفایل‌های داخلی (هاپ و زنجیره) در لیست سرورها نمایش داده نمی‌شوند.
  */
 object ConnectionModeManager {
 
     /** نام ثابت پروفایل زنجیرهٔ مدیریت‌شدهٔ UC MAX */
     const val CHAIN_REMARKS = "UC MAX chain"
+
+    /** شناسهٔ ثابت زنجیرهٔ داخلی؛ در لیست سرورها دیده نمی‌شود */
+    const val CHAIN_GUID = "uc-max-chain"
 
     class Plan(
         /** شناسهٔ پروفایلی که Xray با آن اجرا می‌شود */
@@ -49,17 +53,21 @@ object ConnectionModeManager {
         )
     }
 
-    /** ساخت یا به‌روزرسانی پروفایل زنجیرهٔ مدیریت‌شده: خروجی = V2ray، ورودی = Psiphon */
+    /** ساخت یا به‌روزرسانی پروفایل زنجیرهٔ داخلی: خروجی = V2ray، ورودی = Psiphon */
     private fun ensureChain(v2rayGuid: String, hopGuid: String): String {
         val members = "$v2rayGuid,$hopGuid"
-        val existingGuid = MmkvManager.decodeAllServerList().firstOrNull { guid ->
-            MmkvManager.decodeServerConfig(guid)?.let {
+        // Remove visible chain copies created by previous versions.
+        MmkvManager.decodeAllServerList().forEach { guid ->
+            val isOldChain = MmkvManager.decodeServerConfig(guid)?.let {
                 it.configType == EConfigType.PROXYCHAIN && it.remarks == CHAIN_REMARKS
             } == true
+            if (guid != CHAIN_GUID && isOldChain) {
+                MmkvManager.removeServer(guid)
+            }
         }
-        val profile = existingGuid?.let { MmkvManager.decodeServerConfig(it) }
+        val profile = MmkvManager.decodeServerConfig(CHAIN_GUID)
             ?: ProfileItem.create(EConfigType.PROXYCHAIN).apply { remarks = CHAIN_REMARKS }
         profile.proxyChainProfiles = members
-        return MmkvManager.encodeServerConfig(existingGuid.orEmpty(), profile)
+        return MmkvManager.encodeInternalServerConfig(CHAIN_GUID, profile)
     }
 }

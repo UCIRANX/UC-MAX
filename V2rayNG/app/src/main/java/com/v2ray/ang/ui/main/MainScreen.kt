@@ -188,6 +188,7 @@ fun MainScreen(
                 MainBottomBar(
                     displayText = displayText,
                     isRunning = isRunning,
+                    isConnecting = uiState.isConnecting,
                     isDarkTheme = isDarkTheme,
                     connectionMode = uiState.connectionMode,
                     onAction = onAction

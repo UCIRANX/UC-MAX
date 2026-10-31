@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -45,6 +46,7 @@ import kotlinx.coroutines.launch
 fun MainBottomBar(
     displayText: String,
     isRunning: Boolean,
+    isConnecting: Boolean = false,
     isDarkTheme: Boolean,
     connectionMode: com.v2ray.ang.enums.ConnectionMode,
     onAction: (MainAction) -> Unit
@@ -69,7 +71,7 @@ fun MainBottomBar(
             AppDivider()
             ConnectionModeCard(
                 selected = connectionMode,
-                enabled = !isRunning,
+                enabled = !isRunning && !isConnecting,
                 onSelect = { mode -> onAction(MainAction.SetConnectionMode(mode)) }
             )
             Row(
@@ -89,9 +91,11 @@ fun MainBottomBar(
                 )
             }
         }
+        val colorFabConnecting = Color(0xFFFFB74D)
+        val fabActive = isRunning || isConnecting
         FloatingActionButton(
             onClick = {
-                if (!isRunning) {
+                if (!fabActive) {
                     scope.launch {
                         rotationAnim.animateTo(
                             targetValue = 720f,
@@ -106,21 +110,33 @@ fun MainBottomBar(
                 .padding(end = 24.dp)
                 .offset(y = (-28).dp)
                 .navigationBarsPadding(),
-            containerColor = if (isRunning) colorFabActive
-            else if (isDarkTheme) colorFabInactiveDark
-            else colorFabInactiveLight
+            containerColor = when {
+                isConnecting -> colorFabConnecting
+                isRunning -> colorFabActive
+                isDarkTheme -> colorFabInactiveDark
+                else -> colorFabInactiveLight
+            }
         ) {
-            Icon(
-                painter = if (isRunning) painterResource(R.drawable.ic_stop_24dp)
-                else painterResource(R.drawable.ic_play_24dp),
-                contentDescription = stringResource(
-                    if (isRunning) R.string.acc_stop else R.string.acc_start
-                ),
-                tint = Color.White,
-                modifier = Modifier
-                    .size(24.dp)
-                    .graphicsLayer { rotationZ = rotationAnim.value }
-            )
+            Box(contentAlignment = Alignment.Center) {
+                if (isConnecting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(40.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                }
+                Icon(
+                    painter = if (fabActive) painterResource(R.drawable.ic_stop_24dp)
+                    else painterResource(R.drawable.ic_play_24dp),
+                    contentDescription = stringResource(
+                        if (fabActive) R.string.acc_stop else R.string.acc_start
+                    ),
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .graphicsLayer { rotationZ = rotationAnim.value }
+                )
+            }
         }
     }
 }

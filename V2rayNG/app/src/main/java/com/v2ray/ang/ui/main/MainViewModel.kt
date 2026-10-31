@@ -129,10 +129,14 @@ class MainViewModel(
 
     private fun handleServiceEvent(event: MainServiceEvent) {
         when (event) {
-            MainServiceEvent.StateRunning -> updateRunningState(true, clearTestingText = false)
+            MainServiceEvent.StateRunning -> {
+                _uiState.update { it.copy(isConnecting = false) }
+                updateRunningState(true, clearTestingText = false)
+            }
             MainServiceEvent.StateNotRunning -> updateRunningState(false, clearTestingText = false)
             MainServiceEvent.StateStartSuccess -> {
                 toastSuccess(R.string.toast_services_success)
+                _uiState.update { it.copy(isConnecting = false) }
                 updateRunningState(true)
             }
 
@@ -142,10 +146,14 @@ class MainViewModel(
                 } else {
                     toastError(R.string.toast_services_failure)
                 }
+                _uiState.update { it.copy(isConnecting = false) }
                 updateRunningState(false)
             }
 
-            MainServiceEvent.StateStopSuccess -> updateRunningState(false)
+            MainServiceEvent.StateStopSuccess -> {
+                _uiState.update { it.copy(isConnecting = false) }
+                updateRunningState(false)
+            }
             is MainServiceEvent.MeasureDelayResult -> {
                 if (!uiState.value.isRunning || !testRequests.completeCurrent(event.requestId)) return
                 _uiState.update { it.copy(isTesting = testRequests.isTesting, status = MainStatus.ConnectionTest(event.result)) }
@@ -740,8 +748,13 @@ class MainViewModel(
     }
 
     /** تغییر حالت اتصال؛ هنگام اتصال فعال تغییر ممنوع است */
+    /** نشان‌دادن وضعیت «در حال اتصال» (از Activity هنگام شروع سرویس صدا زده می‌شود) */
+    fun setConnecting(connecting: Boolean) {
+        _uiState.update { it.copy(isConnecting = connecting) }
+    }
+
     fun setConnectionMode(mode: com.v2ray.ang.enums.ConnectionMode) {
-        if (_uiState.value.isRunning) return
+        if (_uiState.value.isRunning || _uiState.value.isConnecting) return
         viewModelScope.launch(ioDispatcher) {
             com.v2ray.ang.core.ConnectionModeManager.setMode(mode)
             if (mode == com.v2ray.ang.enums.ConnectionMode.PSIPHON_ONLY ||

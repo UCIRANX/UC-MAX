@@ -297,6 +297,22 @@ object MmkvManager {
         return key
     }
 
+    /** Subscription id of internal profiles (Psiphon hop, chain). It has no index, so they never show in lists. */
+    const val INTERNAL_PROFILE_SUBSCRIPTION_ID = "uc-max-internal"
+
+    /**
+     * Saves a profile payload that must never appear in server lists (internal Psiphon hop and chain).
+     * Orphan cleanup keeps it because its subscription id has no index.
+     */
+    fun encodeInternalServerConfig(guid: String, config: ProfileItem): String {
+        config.subscriptionId = INTERNAL_PROFILE_SUBSCRIPTION_ID
+        requireStorageWrite(
+            profileFullStorage.encode(guid, JsonUtil.toJson(config)),
+            "Failed to save internal profile payload",
+        )
+        return guid
+    }
+
     /**
      * Saves a profile batch before publishing its group index and removing replaced payloads.
      *
