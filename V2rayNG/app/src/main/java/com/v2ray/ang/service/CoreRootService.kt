@@ -7,6 +7,7 @@ import android.os.IBinder
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.contracts.ServiceControl
 import com.v2ray.ang.core.CoreServiceManager
+import com.v2ray.ang.core.PsiphonCoreManager
 import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.root.RootProxyManager
@@ -47,15 +48,15 @@ class CoreRootService : Service(), ServiceControl {
             return START_STICKY
         }
 
-        // Start the in-process core first (this also posts the foreground notification),
-        // then install the root routing off the main thread.
-        if (!CoreServiceManager.startCoreLoop(null)) {
-            LogUtil.e(AppConfig.TAG, "StartCore-Root: core failed to start")
-            stopService()
-            return START_NOT_STICKY
-        }
-
+        // Start the in-process core first, then install the root routing. Both run off the main
+        // thread: Psiphon may take a long time to connect.
         setupJob = CoroutineScope(Dispatchers.IO).launch {
+            if (!CoreServiceManager.startCoreLoop(null)) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Root: core failed to start")
+                stopService()
+                return@launch
+            }
+
             if (!RootProxyManager.start(this@CoreRootService)) {
                 LogUtil.e(AppConfig.TAG, "StartCore-Root: failed to start root mode, stopping")
                 stopService()
@@ -72,6 +73,9 @@ class CoreRootService : Service(), ServiceControl {
         // tun to appear); if a stop arrives during that window, teardown would run first and
         // the setup would then re-install the rules + tun pointing at a now-dead core,
         // blackholing all traffic until the next start/stop cycle clears it.
+        // A start that is still waiting for Psiphon would block the join below until its timeout;
+        // stopping Psiphon first wakes that wait so the join returns promptly.
+        PsiphonCoreManager.stop()
         runBlocking { setupJob?.cancelAndJoin() }
         // Remove routing rules BEFORE stopping the core so traffic is never redirected
         // to a dead listener. Synchronous on purpose — leaving rules behind breaks the net.

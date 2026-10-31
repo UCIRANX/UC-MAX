@@ -106,14 +106,18 @@ class CoreVpnService : VpnService(), ServiceControl {
             LogUtil.e(AppConfig.TAG, "StartCore-VPN: Interface not initialized")
             return
         }
-        if (!CoreServiceManager.startCoreLoop(mInterface)) {
-            LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to start core loop")
-            stopAllService()
-            return
-        }
+        // startCoreLoop can block for a long time (Psiphon waits for its tunnel). It must not run on
+        // the main thread, otherwise the UI freezes and Stop cannot be processed.
+        Thread(Runnable {
+            if (!CoreServiceManager.startCoreLoop(mInterface)) {
+                LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to start core loop")
+                stopAllService()
+                return@Runnable
+            }
 
-        // Start LAN sharing if enabled in settings
-        RootLanSharing.startClientSharing(this)
+            // Start LAN sharing if enabled in settings
+            RootLanSharing.startClientSharing(this)
+        }, "StartCore-VPN").start()
     }
 
     override fun stopService() {

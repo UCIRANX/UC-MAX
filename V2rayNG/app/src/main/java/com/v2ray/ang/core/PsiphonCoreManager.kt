@@ -35,100 +35,107 @@ object PsiphonCoreManager {
     @Volatile
     private var tunnel: PsiphonTunnel? = null
 
-    /** آیا پروفایل یا یکی از اعضای زنجیره‌اش به هاپ محلی Psiphon نیاز دارد؟ */
-    fun isRequiredByChain(config: ProfileItem): Boolean {
-        if (isLocalHop(config)) return true
-        val members = config.proxyChainProfiles
-            ?.split(",")
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-            .orEmpty()
-        return members.any { guid -> MmkvManager.decodeServerConfig(guid)?.let(::isLocalHop) == true }
-    }
+    // Readiness wait of a start that has not finished yet; stop() uses it to wake that start up.
+    @Volatile
+    private var pendingReady: CompletableDeferred<Unit>? = null
 
-    private fun isLocalHop(profile: ProfileItem): Boolean =
-        profile.configType == EConfigType.SOCKS &&
-            profile.server == LOCAL_SOCKS_HOST &&
-            profile.serverPort == LOCAL_SOCKS_PORT.toString()
+    // Guards tunnel/pendingReady only. It is never held while waiting for Psiphon to connect.
+    private val stateLock = Any()
 
     /**
-     * راه‌اندازی Psiphon و انتظار محدود (timeout) تا پورت SOCKS آماده شود.
+     * راه‌اندازی Psiphon و انتظار محدود (timeout) تا پورت SOCKS باز و تونل برقرار شود.
      * [upstreamProxyUrl] اگر داده شود، ترافیک Psiphon از همان پروکسی (مثلاً SOCKS محلی Xray) عبور می‌کند.
      * فراخوانی تکراری وقتی Psiphon در حال اجراست بی‌اثر است.
+     *
+     * این تابع تا چند دقیقه می‌تواند بلاک شود؛ باید از ترد اصلی (main) فراخوانی نشود.
      */
-    @Synchronized
     fun start(context: Context, upstreamProxyUrl: String? = null) {
-        if (tunnel != null) {
-            LogUtil.i(AppConfig.TAG, "Psiphon: هسته از قبل در حال اجراست")
-            return
-        }
-
         val ready = CompletableDeferred<Unit>()
-        // Ready only when BOTH the SOCKS port is listening AND the tunnel is connected.
-        // A listening port alone is not enough: until a server is reached the local SOCKS
-        // listener closes client connections, which made the connection test fail with
-        // "read/write on closed pipe" right after startup.
-        val portReady = AtomicBoolean(false)
-        val tunnelConnected = AtomicBoolean(false)
-        fun checkReady() {
-            if (portReady.get() && tunnelConnected.get()) {
-                ready.complete(Unit)
+        val psiphon: PsiphonTunnel
+        synchronized(stateLock) {
+            if (tunnel != null) {
+                LogUtil.i(AppConfig.TAG, "Psiphon: هسته از قبل در حال اجراست")
+                return
             }
-        }
-        val host = object : PsiphonTunnel.HostService {
-            override fun getContext(): Context = context.applicationContext
 
-            override fun getPsiphonConfig(): String = buildConfigJson(context, upstreamProxyUrl)
-
-            override fun onListeningSocksProxyPort(port: Int) {
-                if (port == LOCAL_SOCKS_PORT) {
-                    LogUtil.i(AppConfig.TAG, "Psiphon: پورت SOCKS آماده شد ($port)")
-                    portReady.set(true)
-                    checkReady()
-                } else {
-                    ready.completeExceptionally(IllegalStateException("پورت غیرمنتظرهٔ Psiphon: $port"))
+            // Ready only when BOTH the SOCKS port is listening AND the tunnel is connected.
+            val portReady = AtomicBoolean(false)
+            val tunnelConnected = AtomicBoolean(false)
+            fun checkReady() {
+                if (portReady.get() && tunnelConnected.get()) {
+                    ready.complete(Unit)
                 }
             }
 
-            override fun onSocksProxyPortInUse(port: Int) {
-                ready.completeExceptionally(IllegalStateException("پورت SOCKS در حال استفاده است: $port"))
+            val host = object : PsiphonTunnel.HostService {
+                override fun getContext(): Context = context.applicationContext
+
+                override fun getPsiphonConfig(): String = buildConfigJson(context, upstreamProxyUrl)
+
+                override fun onListeningSocksProxyPort(port: Int) {
+                    if (port == LOCAL_SOCKS_PORT) {
+                        LogUtil.i(AppConfig.TAG, "Psiphon: پورت SOCKS آماده شد ($port)")
+                        portReady.set(true)
+                        checkReady()
+                    } else {
+                        ready.completeExceptionally(IllegalStateException("پورت غیرمنتظرهٔ Psiphon: $port"))
+                    }
+                }
+
+                override fun onSocksProxyPortInUse(port: Int) {
+                    ready.completeExceptionally(IllegalStateException("پورت SOCKS در حال استفاده است: $port"))
+                }
+
+                override fun onConnected() {
+                    LogUtil.i(AppConfig.TAG, "Psiphon: تونل برقرار شد")
+                    tunnelConnected.set(true)
+                    checkReady()
+                }
+
+                override fun onDiagnosticMessage(message: String) {
+                    LogUtil.d(AppConfig.TAG, "Psiphon: $message")
+                }
+
+                override fun onExiting() {
+                    LogUtil.w(AppConfig.TAG, "Psiphon: پروسه خاتمه یافت")
+                    ready.completeExceptionally(IllegalStateException("پروسهٔ Psiphon قبل از آماده شدن خاتمه یافت"))
+                }
             }
 
-            override fun onConnected() {
-                LogUtil.i(AppConfig.TAG, "Psiphon: تونل برقرار شد")
-                tunnelConnected.set(true)
-                checkReady()
-            }
-
-            override fun onDiagnosticMessage(message: String) {
-                LogUtil.d(AppConfig.TAG, "Psiphon: $message")
-            }
-
-            override fun onExiting() {
-                LogUtil.w(AppConfig.TAG, "Psiphon: پروسه خاتمه یافت")
-                ready.completeExceptionally(IllegalStateException("پروسهٔ Psiphon قبل از آماده شدن خاتمه یافت"))
-            }
+            psiphon = PsiphonTunnel.newPsiphonTunnel(host)
+            tunnel = psiphon
+            pendingReady = ready
         }
 
-        val psiphon = PsiphonTunnel.newPsiphonTunnel(host)
-        tunnel = psiphon
         try {
             psiphon.startTunneling(EmbeddedValues.EMBEDDED_SERVER_LIST.joinToString("\n"))
             // ترتیب ایمنی (leak prevention): ترافیک زنجیره بدون هاپ آماده نباید خارج شود.
-            // انتظار حتماً محدود (timeout) است.
+            // انتظار حتماً محدود (timeout) است و بیرون از قفل انجام می‌شود.
             runBlocking { withTimeout(START_TIMEOUT_MS) { ready.await() } }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Psiphon: راه‌اندازی ناموفق بود", e)
             stop()
             throw IllegalStateException("راه‌اندازی Psiphon ناموفق بود: ${e.message}", e)
+        } finally {
+            synchronized(stateLock) {
+                if (pendingReady === ready) pendingReady = null
+            }
         }
     }
 
-    /** توقف Psiphon؛ فراخوانی تکراری بی‌اثر است. */
-    @Synchronized
+    /** توقف Psiphon؛ فراخوانی تکراری بی‌اثر است. اگر راه‌اندازی هنوز منتظر است، آن را هم قطع می‌کند. */
     fun stop() {
-        val current = tunnel ?: return
-        tunnel = null
+        val current: PsiphonTunnel?
+        val waiting: CompletableDeferred<Unit>?
+        synchronized(stateLock) {
+            current = tunnel
+            tunnel = null
+            waiting = pendingReady
+            pendingReady = null
+        }
+        // Wake a start that is still waiting, so it fails and returns instead of blocking until timeout.
+        waiting?.completeExceptionally(IllegalStateException("Psiphon stopped before it was ready"))
+        if (current == null) return
         try {
             current.stop()
             LogUtil.i(AppConfig.TAG, "Psiphon: متوقف شد")
