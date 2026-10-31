@@ -2613,10 +2613,6 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
     }
 
     private String getClientVersion() {
-        // Prefer compile-time constant for robustness.
-        String vn = BuildConfig.VERSION_NAME;
-        if (vn != null && !vn.isEmpty()) return vn;
-
         try {
             PackageManager pm = m_parentService.getPackageManager();
             String pkg = m_parentService.getPackageName();

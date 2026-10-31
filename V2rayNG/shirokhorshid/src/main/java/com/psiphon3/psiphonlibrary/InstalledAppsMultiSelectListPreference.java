@@ -69,7 +69,7 @@ class InstalledAppsMultiSelectListPreference extends AlertDialog.Builder impleme
 
         setView(view);
         setTitle(getTitle(whitelist));
-        setPositiveButton(R.string.abc_action_mode_done, null);
+        setPositiveButton(androidx.appcompat.R.string.abc_action_mode_done, null);
         setCancelable(true);
         setNegativeButton(android.R.string.cancel, null);
 

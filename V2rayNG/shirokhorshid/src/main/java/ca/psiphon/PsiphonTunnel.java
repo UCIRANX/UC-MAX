@@ -186,7 +186,11 @@ public class PsiphonTunnel {
         String entries = "";
         File serverListFile = new File(context.getFilesDir(), SERVER_LIST_FILE);
         if (serverListFile.exists()) {
-            entries = new String(java.nio.file.Files.readAllBytes(serverListFile.toPath()), StandardCharsets.UTF_8);
+            try {
+                entries = new String(java.nio.file.Files.readAllBytes(serverListFile.toPath()), StandardCharsets.UTF_8);
+            } catch (java.io.IOException e) {
+                throw new Exception("خواندن فایل لیست سرورها ناموفق بود: " + e.getMessage());
+            }
         }
         startTunneling(entries);
     }

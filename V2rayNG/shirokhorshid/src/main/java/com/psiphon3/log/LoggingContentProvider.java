@@ -34,13 +34,11 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-import com.psiphon3.BuildConfig;
-
 import java.util.concurrent.Executors;
 
 public class LoggingContentProvider extends ContentProvider {
 
-    public static final String AUTHORITY = BuildConfig.APPLICATION_ID + "." + LoggingContentProvider.class.getSimpleName();
+    public static final String AUTHORITY = "com.shirokhorshid.vpn." + LoggingContentProvider.class.getSimpleName();
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY);
 
     private static final int STATUS_LOGS = 1;
