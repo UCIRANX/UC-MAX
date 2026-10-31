@@ -42,7 +42,7 @@ jobs:
           root=/tmp/new
           mapfile -t top < <(find /tmp/new -mindepth 1 -maxdepth 1)
           if [ ${#top[@]} -eq 1 ] && [ -d "${top[0]}" ]; then root="${top[0]}"; fi
-          if [ ! -f "$root/V2rayNG/settings.gradle.kts" ] || [ ! -d "$root/shirokhorshid" ]; then
+          if [ ! -f "$root/V2rayNG/settings.gradle.kts" ] || [ ! -d "$root/V2rayNG/shirokhorshid" ]; then
             echo "::error::این زیپ پروژه UC MAX به نظر نمی‌رسد. هیچ تغییری انجام نشد."; exit 1
           fi
           echo "ROOT=$root" >> "$GITHUB_ENV"
