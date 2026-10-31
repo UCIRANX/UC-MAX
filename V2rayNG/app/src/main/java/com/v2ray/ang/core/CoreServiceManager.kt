@@ -106,6 +106,7 @@ object CoreServiceManager {
         } catch (e: Exception) {
             val message = e.message?.takeUnless { it.isBlank() } ?: e.javaClass.simpleName
             LogUtil.e(AppConfig.TAG, "StartCore-Manager: $message", e)
+            PsiphonCoreManager.stop()
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_FAILURE, message)
             NotificationManager.cancelNotification()
             return false
@@ -131,6 +132,10 @@ object CoreServiceManager {
         val config = MmkvManager.decodeServerConfig(guid) ?: error("Failed to decode server config")
 
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Starting core loop for ${config.remarks}")
+        // اگر پروفایل یا زنجیره‌اش به هاپ Psiphon نیاز دارد، باید قبل از Xray بالا بیاید
+        if (PsiphonCoreManager.isRequiredByChain(config)) {
+            PsiphonCoreManager.start(service)
+        }
         val result = CoreConfigManager.getV2rayConfig(service, guid)
         LogUtil.d(AppConfig.TAG, result.content)
         if (!result.status) {
@@ -196,6 +201,7 @@ object CoreServiceManager {
         networkMonitor?.unregister()
         networkMonitor = null
         currentVpnInterface = null
+        PsiphonCoreManager.stop()
 
         if (isRunning()) {
             CoroutineScope(Dispatchers.IO).launch {

@@ -308,6 +308,7 @@ class MainViewModel(
             MainAction.ImportClipboard,
             MainAction.ImportConfigLocal,
             is MainAction.ImportManually,
+            MainAction.ImportPsiphonHop,
             MainAction.RestartService,
             MainAction.LocateSelectedServer,
             is MainAction.EditServer,
@@ -734,6 +735,14 @@ class MainViewModel(
             } catch (error: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to load selected group: $id", error)
             }
+        }
+    }
+
+    /** ساخت پروفایل هاپ Psiphon در IO و بارگذاری مجدد فهرست سرورها */
+    fun importPsiphonHop() {
+        viewModelScope.launch(ioDispatcher) {
+            com.v2ray.ang.core.PsiphonCoreManager.createHopProfile()
+            reloadServerList()
         }
     }
 
