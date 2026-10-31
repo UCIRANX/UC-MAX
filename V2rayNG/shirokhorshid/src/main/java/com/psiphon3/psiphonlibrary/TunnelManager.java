@@ -1252,6 +1252,7 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
         Builder vpnBuilder = ((VpnService) m_parentService)
                 .new Builder()
                 .setSession(getContext().getString(R.string.app_name));
+
         // only can control tunneling post lollipop
         if (Build.VERSION.SDK_INT < LOLLIPOP) {
             return vpnBuilder;
@@ -1275,6 +1276,7 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
 
         VpnAppsUtils.VpnAppsExclusionSetting vpnMode = VpnAppsUtils.getVpnAppsExclusionMode(context);
         m_tunnelState.vpnMode = vpnMode;
+        boolean usesAllowList = false;
 
         switch (vpnMode) {
             case ALL_APPS:
@@ -1285,6 +1287,7 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
             case INCLUDE_APPS:
                 Set<String> includedApps = VpnAppsUtils.getUserControllableAppsIncludedInVpn(context);
                 int includedAppsCount = includedApps.size();
+                usesAllowList = includedAppsCount > 0;
                 // allow the selected apps
                 for (Iterator<String> iterator = includedApps.iterator(); iterator.hasNext(); ) {
                     String packageId = iterator.next();
@@ -1333,17 +1336,8 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
                         }
                     }
 
-                    // Also always include the Psiphon app itself in this mode
-                    // Note that we are not checking if the app is installed here, we trust that self is always installed
-                    // and log a warning if it is not (should never happen)
-                    try {
-                        vpnBuilder.addAllowedApplication(context.getPackageName());
-                        m_tunnelState.vpnApps.add(context.getPackageName());
-                        MyLog.i(R.string.individual_app_included, MyLog.Sensitivity.SENSITIVE_FORMAT_ARGS,
-                                context.getPackageName());
-                    } catch (PackageManager.NameNotFoundException e) {
-                        MyLog.w("TunnelManager: VpnBuilder: failed to add self to allowed VPN applications, package not found");
-                    }
+                    // Psiphon را عمداً به allow-list اضافه نمی‌کنیم: پروسهٔ Psiphon همان uid برنامه است و
+                    // اگر برنامه در TUN باشد ترافیک هسته دوباره وارد تونل می‌شود (حلقه).
                 } else {
                     // If there are no apps to include, set the exclusion mode to ALL_APPS
                     // Note that we will be excluding default excluded apps in this case later.
@@ -1413,6 +1407,15 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
 
                 vpnAppsExclusionCount = excludedAppsCount;
                 break;
+        }
+
+        // پروسهٔ Psiphon با uid برنامه اجرا می‌شود؛ برنامه باید از VPN مستثنا باشد تا حلقه ایجاد نشود.
+        if (!usesAllowList) {
+            try {
+                vpnBuilder.addDisallowedApplication(context.getPackageName());
+            } catch (PackageManager.NameNotFoundException e) {
+                MyLog.w("TunnelManager: VpnBuilder: failed to exclude own package from VPN");
+            }
         }
 
         // If we are in ALL_APPS mode then disallow apps that should not be tunneled by default if the device supports

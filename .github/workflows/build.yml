@@ -12,9 +12,18 @@ permissions:
   contents: write
 
 jobs:
-  build-aar:
-    name: Build tunnel-core AAR (پیش‌نیاز ساخت)
+  build-psiphon:
+    name: Build Psiphon binary (libpsiphon.so)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goarch: arm64
+            goarm: ""
+            abi: arm64-v8a
+          - goarch: arm
+            goarm: "7"
+            abi: armeabi-v7a
     steps:
       - name: Checkout tunnel-core
         uses: actions/checkout@v4
@@ -26,118 +35,30 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.3'
+          go-version: '1.22'
           cache: false
 
-      - name: Install Android NDK 23 and platform 30
+      - name: Build ConsoleClient as a static Android binary
+        working-directory: psiphon-tunnel-core
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CGO_ENABLED: "0"
         run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;23.1.7779620" "platforms;android-30"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/23.1.7779620" >> $GITHUB_ENV
+          mkdir -p "$RUNNER_TEMP/out/${{ matrix.abi }}"
+          go build -trimpath -tags PSIPHON_ENABLE_INPROXY -ldflags "-s -w" \
+            -o "$RUNNER_TEMP/out/${{ matrix.abi }}/libpsiphon.so" ./ConsoleClient
+          ls -la "$RUNNER_TEMP/out/${{ matrix.abi }}"
 
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '8'
-
-      - name: Set up GOPATH workspace
-        run: |
-          echo "GOPATH=${{ runner.temp }}/gopath" >> $GITHUB_ENV
-          echo "GO111MODULE=off" >> $GITHUB_ENV
-          echo "${{ runner.temp }}/gopath/bin" >> $GITHUB_PATH
-          mkdir -p "${{ runner.temp }}/gopath/src/github.com/Psiphon-Labs"
-          ln -s "$GITHUB_WORKSPACE/psiphon-tunnel-core" \
-            "${{ runner.temp }}/gopath/src/github.com/Psiphon-Labs/psiphon-tunnel-core"
-
-      - name: Install vendored gomobile
-        run: |
-          mkdir -p "$GOPATH/src/golang.org/x"
-          cp -r psiphon-tunnel-core/MobileLibrary/go-mobile "$GOPATH/src/golang.org/x/mobile"
-          # Patch gomobile to not fetch gobind from network
-          sed -i 's/golang.org\/x\/mobile\/cmd\/gobind@latest/golang.org\/x\/mobile\/cmd\/gobind/' \
-            "$GOPATH/src/golang.org/x/mobile/cmd/gomobile/init.go"
-          go install golang.org/x/mobile/cmd/gomobile
-          go install golang.org/x/mobile/cmd/gobind
-          gomobile init -v
-
-      - name: Build AAR with gomobile bind
-        run: |
-          BUILDDATE=$(date --iso-8601=seconds)
-          BUILDREPO=$(cd "$GITHUB_WORKSPACE/psiphon-tunnel-core" && git remote get-url origin)
-          BUILDREV=$(cd "$GITHUB_WORKSPACE/psiphon-tunnel-core" && git rev-parse --short HEAD)
-          GOFLAGS=""
-
-          LDFLAGS="-checklinkname=0 -s -w"
-          LDFLAGS="$LDFLAGS -X github.com/Psiphon-Labs/psiphon-tunnel-core/psiphon/common/buildinfo.buildDate=$BUILDDATE"
-          LDFLAGS="$LDFLAGS -X github.com/Psiphon-Labs/psiphon-tunnel-core/psiphon/common/buildinfo.buildRepo=$BUILDREPO"
-          LDFLAGS="$LDFLAGS -X github.com/Psiphon-Labs/psiphon-tunnel-core/psiphon/common/buildinfo.buildRev=$BUILDREV"
-          LDFLAGS="$LDFLAGS -X github.com/Psiphon-Labs/psiphon-tunnel-core/psiphon/common/buildinfo.goVersion=$(go version | perl -ne '/go(.*?)\s/ && print $1')"
-          LDFLAGS="$LDFLAGS -X github.com/Psiphon-Labs/psiphon-tunnel-core/psiphon/common/buildinfo.gomobileVersion=vendored"
-          LDFLAGS="$LDFLAGS -extldflags=-Wl,-z,max-page-size=16384,-z,common-page-size=16384"
-
-          BUILD_TAGS="PSIPHON_ENABLE_INPROXY"
-
-          export CGO_LDFLAGS="-Wl,-z,max-page-size=16384,-z,common-page-size=16384"
-          export GOCACHE=/tmp/go-cache
-
-          gomobile bind -v \
-            -target=android/arm,android/arm64 \
-            -tags="$BUILD_TAGS" \
-            -ldflags="$LDFLAGS" \
-            -o psi.aar \
-            github.com/Psiphon-Labs/psiphon-tunnel-core/MobileLibrary/psi
-        working-directory: ${{ runner.temp }}/gopath/src/github.com/Psiphon-Labs/psiphon-tunnel-core/MobileLibrary/Android
-
-      - name: Post-process AAR
-        run: |
-          WORKDIR="${{ runner.temp }}/gopath/src/github.com/Psiphon-Labs/psiphon-tunnel-core/MobileLibrary/Android"
-          cd "$WORKDIR"
-
-          # Unpack the gomobile-generated AAR
-          mkdir -p aar_tmp && cd aar_tmp
-          unzip -o ../psi.aar
-
-          # Replace AndroidManifest with PsiphonTunnel's version
-          cp ../PsiphonTunnel/AndroidManifest.xml .
-
-          # Add backup rules
-          mkdir -p res/xml
-          cp ../PsiphonTunnel/ca_psiphon_psiphontunnel_backup_rules.xml res/xml/
-
-          # Compile PsiphonTunnel.java and add to classes.jar
-          ANDROID_JAR="$ANDROID_HOME/platforms/android-30/android.jar"
-          mkdir -p compiled_classes
-          javac -source 1.8 -target 1.8 -bootclasspath "$ANDROID_JAR" \
-            -classpath classes.jar \
-            -d compiled_classes \
-            ../PsiphonTunnel/PsiphonTunnel.java
-
-          # Merge compiled classes into classes.jar
-          if [ -d compiled_classes ] && [ "$(ls -A compiled_classes)" ]; then
-            cd compiled_classes
-            jar uf ../classes.jar .
-            cd ..
-          fi
-
-          # Add proguard rules
-          echo "-keep class ca.psiphon.** { *; }" >> proguard.txt
-          echo "-keep class psi.** { *; }" >> proguard.txt
-
-          # Repackage as ca.psiphon.aar
-          rm -f ../ca.psiphon.aar
-          zip -r ../ca.psiphon.aar . -x '*.DS_Store'
-          cd ..
-          rm -rf aar_tmp psi.aar
-
-      - name: Upload AAR artifact
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: ca-psiphon-aar
-          path: ${{ runner.temp }}/gopath/src/github.com/Psiphon-Labs/psiphon-tunnel-core/MobileLibrary/Android/ca.psiphon.aar
-          retention-days: 1
+          name: psiphon-${{ matrix.abi }}
+          path: ${{ runner.temp }}/out/${{ matrix.abi }}/libpsiphon.so
 
   build:
-    needs: build-aar
+    needs: build-psiphon
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -162,11 +83,18 @@ jobs:
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --channel=0 --install "ndk;30.0.16248370"
           echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> $GITHUB_ENV
 
-      - name: Download ca.psiphon.aar
+      - name: Download Psiphon binaries
         uses: actions/download-artifact@v4
         with:
-          name: ca-psiphon-aar
-          path: V2rayNG/shirokhorshid/libs
+          pattern: psiphon-*
+          path: psiphon-bin
+
+      - name: Place Psiphon binaries into jniLibs
+        run: |
+          for abi in arm64-v8a armeabi-v7a; do
+            mkdir -p "V2rayNG/shirokhorshid/src/main/jniLibs/$abi"
+            cp "psiphon-bin/psiphon-$abi/libpsiphon.so" "V2rayNG/shirokhorshid/src/main/jniLibs/$abi/libpsiphon.so"
+          done
 
       - name: Fetch native sources (hev-socks5-tunnel and AndroidLibXrayLite)
         run: |
