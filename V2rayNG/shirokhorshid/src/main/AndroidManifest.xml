@@ -258,8 +258,8 @@
         </service>
 
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="com.shirokhorshid.vpn.UpgradeFileProvider"
+            android:name="com.psiphon3.UpgradeFileProvider"
+            android:authorities="${applicationId}.UpgradeFileProvider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

@@ -42,6 +42,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
+        tools:replace="android:name,android:allowBackup,android:theme,android:usesCleartextTraffic"
         android:name=".AngApplication"
         android:allowBackup="true"
         android:banner="@mipmap/ic_banner"
