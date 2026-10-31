@@ -42,6 +42,22 @@ object PsiphonCoreManager {
     // Guards tunnel/pendingReady only. It is never held while waiting for Psiphon to connect.
     private val stateLock = Any()
 
+    /** آیا پروفایل یا یکی از اعضای زنجیره‌اش به هاپ محلی Psiphon نیاز دارد؟ */
+    fun isRequiredByChain(config: ProfileItem): Boolean {
+        if (isLocalHop(config)) return true
+        val members = config.proxyChainProfiles
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            .orEmpty()
+        return members.any { guid -> MmkvManager.decodeServerConfig(guid)?.let(::isLocalHop) == true }
+    }
+
+    private fun isLocalHop(profile: ProfileItem): Boolean =
+        profile.configType == EConfigType.SOCKS &&
+            profile.server == LOCAL_SOCKS_HOST &&
+            profile.serverPort == LOCAL_SOCKS_PORT.toString()
+
     /**
      * راه‌اندازی Psiphon و انتظار محدود (timeout) تا پورت SOCKS باز و تونل برقرار شود.
      * [upstreamProxyUrl] اگر داده شود، ترافیک Psiphon از همان پروکسی (مثلاً SOCKS محلی Xray) عبور می‌کند.
