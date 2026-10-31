@@ -41,6 +41,11 @@ public class StatisticsTabFragment extends Fragment {
     private DataTransferGraph fastReceivedGraph;
 
     private void updateStatisticsUICallback(boolean isConnected) {
+        // Stats can arrive while the fragment is detached or its view is gone; getString() and the
+        // view references below would then throw.
+        if (!isAdded() || elapsedConnectionTimeView == null) {
+            return;
+        }
         DataTransferStats.DataTransferStatsForUI dataTransferStats = DataTransferStats.getDataTransferStatsForUI();
         elapsedConnectionTimeView.setText(isConnected ? getString(R.string.connected_elapsed_time,
                 Utils.elapsedTimeToDisplay(dataTransferStats.getElapsedTime())) : getString(R.string.disconnected));
@@ -56,6 +61,13 @@ public class StatisticsTabFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         compositeDisposable.dispose();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Stop UI callbacks while the views are gone; onViewCreated subscribes again.
+        compositeDisposable.clear();
     }
 
     @Override

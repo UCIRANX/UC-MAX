@@ -310,9 +310,19 @@ public class TunnelServiceInteractor {
         DataTransferStats.getDataTransferStatsForUI().m_connectedTime = data.getLong(TunnelManager.DATA_TRANSFER_STATS_CONNECTED_TIME);
         DataTransferStats.getDataTransferStatsForUI().m_totalBytesSent = data.getLong(TunnelManager.DATA_TRANSFER_STATS_TOTAL_BYTES_SENT);
         DataTransferStats.getDataTransferStatsForUI().m_totalBytesReceived = data.getLong(TunnelManager.DATA_TRANSFER_STATS_TOTAL_BYTES_RECEIVED);
-        DataTransferStats.getDataTransferStatsForUI().m_slowBuckets = data.getParcelableArrayList(TunnelManager.DATA_TRANSFER_STATS_SLOW_BUCKETS);
+        // Keep the current buckets when the bundle omits them; a null list makes the UI series
+        // builders in DataTransferStatsForUI throw NullPointerException.
+        ArrayList<DataTransferStats.DataTransferStatsBase.Bucket> slowBuckets =
+                data.getParcelableArrayList(TunnelManager.DATA_TRANSFER_STATS_SLOW_BUCKETS);
+        if (slowBuckets != null) {
+            DataTransferStats.getDataTransferStatsForUI().m_slowBuckets = slowBuckets;
+        }
         DataTransferStats.getDataTransferStatsForUI().m_slowBucketsLastStartTime = data.getLong(TunnelManager.DATA_TRANSFER_STATS_SLOW_BUCKETS_LAST_START_TIME);
-        DataTransferStats.getDataTransferStatsForUI().m_fastBuckets = data.getParcelableArrayList(TunnelManager.DATA_TRANSFER_STATS_FAST_BUCKETS);
+        ArrayList<DataTransferStats.DataTransferStatsBase.Bucket> fastBuckets =
+                data.getParcelableArrayList(TunnelManager.DATA_TRANSFER_STATS_FAST_BUCKETS);
+        if (fastBuckets != null) {
+            DataTransferStats.getDataTransferStatsForUI().m_fastBuckets = fastBuckets;
+        }
         DataTransferStats.getDataTransferStatsForUI().m_fastBucketsLastStartTime = data.getLong(TunnelManager.DATA_TRANSFER_STATS_FAST_BUCKETS_LAST_START_TIME);
     }
 
@@ -333,7 +343,9 @@ public class TunnelServiceInteractor {
             if (tunnelServiceInteractor == null) {
                 return;
             }
-            if (msg.what > scm.length) {
+            // Bounds check: valid codes are 0..scm.length-1. The old "> length" test let
+            // msg.what == length through and crashed with ArrayIndexOutOfBoundsException.
+            if (msg.what < 0 || msg.what >= scm.length) {
                 super.handleMessage(msg);
                 return;
             }
@@ -364,7 +376,9 @@ public class TunnelServiceInteractor {
                     break;
                 case DATA_TRANSFER_STATS:
                     getDataTransferStatsFromBundle(data);
-                    tunnelServiceInteractor.dataStatsRelay.accept(state.isConnected());
+                    // A stats message can arrive before any connection-state message; state is
+                    // then still null and must not be dereferenced.
+                    tunnelServiceInteractor.dataStatsRelay.accept(state != null && state.isConnected());
                     break;
                 case NFC_CONNECTION_INFO_EXCHANGE_EXPORT:
                     if (tunnelServiceInteractor.nfcExportListener != null) {

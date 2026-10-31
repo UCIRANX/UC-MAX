@@ -32,7 +32,7 @@ object ConnectionModeManager {
         )
 
     fun setMode(mode: ConnectionMode) {
-        MmkvManager.encodeSettings(AppConfig.PREF_CONNECTION_MODE, mode.value)
+        MmkvManager.encodeSettings(AppConfig.PREF_CONNECTION_MODE, mode.value.toString())
     }
 
     /** نقشهٔ اجرا بر اساس حالت فعلی و پروفایل V2ray انتخاب‌شده */

@@ -213,7 +213,11 @@ public class MainActivity extends LocalizedActivities.AppCompatActivity {
         toggleButton = findViewById(R.id.toggleButton);
         connectionProgressBar = findViewById(R.id.connectionProgressBar);
         connectionWaitingNetworkIndicator = findViewById(R.id.connectionWaitingNetworkIndicator);
-        ((AnimationDrawable) connectionWaitingNetworkIndicator.getBackground()).start();
+        // The layout sets an animation-list background; guard the cast so a changed resource
+        // cannot crash the screen on creation.
+        if (connectionWaitingNetworkIndicator.getBackground() instanceof AnimationDrawable) {
+            ((AnimationDrawable) connectionWaitingNetworkIndicator.getBackground()).start();
+        }
         openBrowserButton = findViewById(R.id.openBrowserButton);
         configureClearLogsButton();
         toggleButton.setOnClickListener(v ->
@@ -481,9 +485,13 @@ public class MainActivity extends LocalizedActivities.AppCompatActivity {
     // displays a prompt and waits until the user accepts and preference is stored, then completes.
     Completable vpnServiceDataCollectionDisclosureCompletable() {
         return Completable.create(emitter -> {
-            if (multiProcessPreferences.getBoolean(getString(R.string.vpnServiceDataCollectionDisclosureAccepted), false) &&
-                    !emitter.isDisposed()) {
-                emitter.onComplete();
+            if (multiProcessPreferences.getBoolean(getString(R.string.vpnServiceDataCollectionDisclosureAccepted), false)) {
+                if (!emitter.isDisposed()) {
+                    emitter.onComplete();
+                }
+                // Missing return before: the prompt was built and shown even after acceptance, then
+                // dismissed at once because the emitter had already completed.
+                return;
             }
             View dialogView = getLayoutInflater().inflate(R.layout.vpn_data_collection_disclosure_prompt_layout, null);
 
@@ -856,7 +864,8 @@ public class MainActivity extends LocalizedActivities.AppCompatActivity {
     private boolean handleDeepLinkIntent(@NonNull Intent intent) {
         final String FWD_SLASH = "/";
 
-        final String PSIPHON_SCHEME = "psiphon";
+        // Must match the scheme declared in AndroidManifest.xml (shirokhorshid://settings).
+        final String PSIPHON_SCHEME = "shirokhorshid";
 
         final String SETTINGS_HOST = "settings";
         final String SETTINGS_PATH_VPN = "/vpn";
@@ -874,7 +883,12 @@ public class MainActivity extends LocalizedActivities.AppCompatActivity {
 
         String path = intentUri.getPath();
 
-        switch (intentUri.getHost()) {
+        String host = intentUri.getHost();
+        if (host == null) {
+            // Malformed URI without a host; switch(null) would throw NullPointerException.
+            return false;
+        }
+        switch (host) {
             case SETTINGS_HOST:
                 selectTabByTag("settings");
                 if (path != null) {
