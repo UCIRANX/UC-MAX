@@ -39,6 +39,7 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 
 import androidx.annotation.CheckResult;
+import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.jakewharton.rxrelay2.BehaviorRelay;
@@ -65,6 +66,8 @@ public class TunnelServiceInteractor {
     private final BroadcastReceiver broadcastReceiver;
     private Relay<TunnelState> tunnelStateRelay = BehaviorRelay.<TunnelState>create().toSerialized();
     private Relay<Boolean> dataStatsRelay = PublishRelay.<Boolean>create().toSerialized();
+    private final Context appContext;
+    private final BroadcastReceiver v2rayStateReceiver;
 
     private final Messenger incomingMessenger = new Messenger(new IncomingMessageHandler(this));
 
@@ -77,6 +80,7 @@ public class TunnelServiceInteractor {
 
     public TunnelServiceInteractor(Context context, boolean registerAsActivity) {
         this.shouldRegisterAsActivity = registerAsActivity;
+        this.appContext = context.getApplicationContext();
         // Listen to SERVICE_STARTING_BROADCAST_INTENT broadcast that may be sent by another instance
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(SERVICE_STARTING_BROADCAST_INTENT);
@@ -92,6 +96,23 @@ public class TunnelServiceInteractor {
             }
         };
         LocalBroadcastManager.getInstance(context).registerReceiver(broadcastReceiver, intentFilter);
+
+        // وضعیت هستهٔ V2ray از اپ اصلی: پیام‌های وضعیت به حالت تونل صفحهٔ Psiphon تبدیل می‌شوند
+        final String statusAction = context.getPackageName() + V2RayBridge.ACTION_STATUS_SUFFIX;
+        this.v2rayStateReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context ctx, Intent intent) {
+                if (intent == null || !statusAction.equals(intent.getAction())) {
+                    return;
+                }
+                TunnelState state = V2RayBridge.stateFromKey(intent.getIntExtra("key", -1));
+                if (state != null) {
+                    tunnelStateRelay.accept(state);
+                }
+            }
+        };
+        ContextCompat.registerReceiver(appContext, v2rayStateReceiver,
+                new IntentFilter(statusAction), ContextCompat.RECEIVER_NOT_EXPORTED);
         tunnelStateRelay.accept(TunnelState.unknown());
     }
 
@@ -105,7 +126,8 @@ public class TunnelServiceInteractor {
         if (isServiceRunning(context)) {
             bindTunnelService(context);
         } else {
-            tunnelStateRelay.accept(TunnelState.stopped());
+            // هستهٔ V2ray وضعیت خودش را گزارش می‌کند؛ اینجا فقط درخواست وضعیت می‌دهیم
+            V2RayBridge.requestStatus(context);
         }
     }
 
@@ -121,40 +143,18 @@ public class TunnelServiceInteractor {
 
     public void onDestroy(Context context) {
         LocalBroadcastManager.getInstance(context).unregisterReceiver(broadcastReceiver);
+        appContext.unregisterReceiver(v2rayStateReceiver);
     }
 
     public void startTunnelService(Context context) {
         tunnelStateRelay.accept(TunnelState.unknown());
-        Intent intent = new Intent(context, TunnelVpnService.class);
-        try {
-            // Starting with API 26 use startForegroundService
-            //
-            // From the docs:
-            // Similar to startService(android.content.Intent), but with an implicit promise that the
-            // Service will call startForeground(int, android.app.Notification) once it begins running.
-            // The service is given an amount of time comparable to the ANR interval to do this, otherwise
-            // the system will automatically stop the service and declare the app ANR.
-            //
-            // Unlike the ordinary startService(android.content.Intent), this method can be used at
-            // any time, regardless of whether the app hosting the service is in a foreground state.
-            if (Build.VERSION.SDK_INT >= 26) {
-                context.startForegroundService(intent);
-            } else {
-                // Pre-O behavior.
-                context.startService(intent);
-            }
-            // Send tunnel starting service broadcast to all instances so they all bind
-            LocalBroadcastManager.getInstance(context).sendBroadcast(intent.setAction(SERVICE_STARTING_BROADCAST_INTENT));
-        } catch (SecurityException | IllegalStateException e) {
-            MyLog.e("startTunnelService failed with error: " + e);
-            tunnelStateRelay.accept(TunnelState.stopped());
-        }
+        // اتصال از طریق هستهٔ V2ray انجام می‌شود تا حالت انتخاب‌شده در صفحهٔ اصلی اعمال شود
+        V2RayBridge.toggle(appContext);
     }
 
     public void stopTunnelService() {
         tunnelStateRelay.accept(TunnelState.unknown());
-        sendServiceMessageCompletable(TunnelManager.ClientToServiceMessage.STOP_SERVICE.ordinal(), null)
-                .subscribe();
+        V2RayBridge.toggle(appContext);
     }
 
     public void scheduleVpnServiceRestart(Context context) {

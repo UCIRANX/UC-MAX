@@ -309,7 +309,6 @@ class MainViewModel(
             MainAction.ImportClipboard,
             MainAction.ImportConfigLocal,
             is MainAction.ImportManually,
-            MainAction.ImportPsiphonHop,
             is MainAction.SetConnectionMode,
             MainAction.RestartService,
             MainAction.LocateSelectedServer,
@@ -752,14 +751,6 @@ class MainViewModel(
                 reloadServerList()
             }
             _uiState.update { it.copy(connectionMode = mode) }
-        }
-    }
-
-    /** ساخت پروفایل هاپ Psiphon در IO و بارگذاری مجدد فهرست سرورها */
-    fun importPsiphonHop() {
-        viewModelScope.launch(ioDispatcher) {
-            com.v2ray.ang.core.PsiphonCoreManager.createHopProfile()
-            reloadServerList()
         }
     }
 

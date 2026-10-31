@@ -564,7 +564,6 @@
     <string name="sub_info_open_page">باز کردن صفحه اطلاعات اشتراک</string>
     <string name="sub_info_unlimited">نامحدود</string>
 
-    <string name="menu_item_import_config_psiphon_hop">افزودن هاپ Psiphon</string>
     <string name="drawer_psiphon">شیر و خورشید (Psiphon)</string>
     <string name="connection_mode_title">حالت اتصال</string>
     <string name="connection_mode_v2ray">فقط V2ray</string>

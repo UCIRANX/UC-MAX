@@ -67,6 +67,15 @@ class WidgetProvider : AppWidgetProvider() {
      */
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        // درخواست وضعیت از صفحهٔ شیروخورشید: وضعیت واقعی هسته را برمی‌گردانیم
+        if (AppConfig.BROADCAST_ACTION_STATUS_REQUEST == intent.action) {
+            com.v2ray.ang.helper.MessageHelper.sendMsg2UI(
+                context,
+                if (CoreServiceManager.isRunning()) AppConfig.MSG_STATE_RUNNING else AppConfig.MSG_STATE_NOT_RUNNING,
+                ""
+            )
+            return
+        }
         if (AppConfig.BROADCAST_ACTION_WIDGET_CLICK == intent.action) {
             if (CoreServiceManager.isRunning()) {
                 LauncherManager.stopService(context)

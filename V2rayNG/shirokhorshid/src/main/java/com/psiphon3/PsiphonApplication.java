@@ -94,11 +94,16 @@ public class PsiphonApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        MyLog.init(this);
+        initialize(this);
+    }
 
-        final String reportPath = PsiphonCrashService.getTempCrashReportPath(this);
+    /** راه‌اندازی مشترک Psiphon؛ از AngApplication هم فراخوانی می‌شود تا تمام کدهای Psiphon آماده باشند. */
+    public static void initialize(Application app) {
+        MyLog.init(app);
+
+        final String reportPath = PsiphonCrashService.getTempCrashReportPath(app);
         final NDCrashError error = NDCrash.initializeOutOfProcess(
-                this,
+                app,
                 reportPath,
                 NDCrashUnwinder.libunwind,
                 PsiphonCrashService.class);
@@ -108,18 +113,18 @@ public class PsiphonApplication extends Application {
         }
 
         // Make sure VPN service is ALWAYS enabled because app upgrade will not automatically re-enable it
-        PackageManager packageManager = getPackageManager();
-        ComponentName componentName = new ComponentName(getPackageName(), TunnelVpnService.class.getName());
+        PackageManager packageManager = app.getPackageManager();
+        ComponentName componentName = new ComponentName(app.getPackageName(), TunnelVpnService.class.getName());
         packageManager.setComponentEnabledSetting(componentName,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP);
 
-        PsiphonConstants.DEBUG = Utils.isDebugMode(this);
+        PsiphonConstants.DEBUG = Utils.isDebugMode(app);
 
         // If an Rx subscription is disposed while the observable is still running its async task
         // which may throw an error the error will have nowhere to go and will result in an uncaught
         // UndeliverableException being thrown. We are going to set up a global error handler to make
-        // sure the app is not crashed in this case. For more details see
+        // sure the app is not crashed in app case. For more details see
         // https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0#error-handling
         RxJavaPlugins.setErrorHandler(e -> {
             if (e instanceof UndeliverableException) {

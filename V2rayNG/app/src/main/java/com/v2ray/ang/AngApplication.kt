@@ -47,5 +47,8 @@ class AngApplication : Application() {
 
         // Initialize theme state from MMKV
         ThemeManager.refresh()
+
+        // راه‌اندازی بخش Shirokhorshid (Psiphon) مطابق PsiphonApplication اصلی آن پروژه
+        com.psiphon3.PsiphonApplication.initialize(this)
     }
 }

@@ -53,7 +53,6 @@ sealed interface MainAction {
     data object ImportClipboard : MainAction
     data object ImportConfigLocal : MainAction
     data class ImportManually(val type: Int) : MainAction
-    data object ImportPsiphonHop : MainAction
     data class SetConnectionMode(val mode: com.v2ray.ang.enums.ConnectionMode) : MainAction
     data object RestartService : MainAction
     data object LocateSelectedServer : MainAction
