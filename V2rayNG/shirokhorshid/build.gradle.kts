@@ -54,14 +54,14 @@ val remoteSigKey = System.getenv("PSIPHON_REMOTE_SERVER_LIST_SIGNATURE_PUBLIC_KE
 val embeddedListFile = file("embedded_server_list.txt")
 val embeddedListText = System.getenv("PSIPHON_EMBEDDED_SERVER_LIST")?.takeIf { it.isNotBlank() }
     ?: if (embeddedListFile.exists()) embeddedListFile.readText(Charsets.UTF_8) else ""
-// هر سرور باید به‌صورت hex(JSON) در یک خط باشد (بدون فاصله). پیشوند قدیمی "0 0 0 0 " حذف و JSON به hex تبدیل می‌شود.
+// هر سرور به‌صورت hex کل خط (شامل پیشوند "0 0 0 0 " و JSON) در یک خط بدون فاصله نوشته می‌شود.
 // فقط با خط جدید جدا می‌شود، چون هر ورودی خودش فاصله دارد.
 val embeddedServerEntries = embeddedListText
     .split('\n', '\r')
     .map { it.trim() }
     .filter { it.contains('{') }
     .map { line ->
-        line.substring(line.indexOf('{')).toByteArray(Charsets.UTF_8)
+        line.toByteArray(Charsets.UTF_8)
             .joinToString("") { b -> "%02x".format(b.toInt() and 0xff) }
     }
 if (embeddedServerEntries.isEmpty()) {
