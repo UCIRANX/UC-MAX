@@ -1,0 +1,84 @@
+# اعمال زیپ پروژه: زیپ را در ریشه ریپو آپلود کن، سپس این workflow را اجرا کن.
+# محتویات ریپو با زیپ جایگزین می‌شود، commit و push انجام می‌شود، و در صورت انتخاب، بیلد شروع می‌شود.
+name: Apply ZIP
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: "بعد از اعمال زیپ، بیلد APK هم اجرا شود؟ (اولین بار false بگذار و اول keystore را بساز)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # برای push و اجرای workflow دیگر لازم است؛ GITHUB_TOKEN برای این کار کافی نیست
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Find and unpack the zip
+        run: |
+          shopt -s nullglob
+          zips=(*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "::error::زیپی در ریشه ریپو پیدا نشد."; exit 1
+          fi
+          if [ ${#zips[@]} -gt 1 ]; then
+            echo "::error::بیش از یک زیپ پیدا شد (${zips[*]}). فقط یکی را نگه دار."; exit 1
+          fi
+          zip="${zips[0]}"
+          echo "Using $zip"
+          rm -rf /tmp/new && mkdir -p /tmp/new
+          unzip -q "$zip" -d /tmp/new
+          rm -rf /tmp/new/__MACOSX
+          root=/tmp/new
+          mapfile -t top < <(find /tmp/new -mindepth 1 -maxdepth 1)
+          if [ ${#top[@]} -eq 1 ] && [ -d "${top[0]}" ]; then root="${top[0]}"; fi
+          if [ ! -f "$root/V2rayNG/settings.gradle.kts" ] || [ ! -d "$root/shirokhorshid" ]; then
+            echo "::error::این زیپ پروژه UC MAX به نظر نمی‌رسد. هیچ تغییری انجام نشد."; exit 1
+          fi
+          echo "ROOT=$root" >> "$GITHUB_ENV"
+          echo "ZIP=$zip" >> "$GITHUB_ENV"
+
+      - name: Replace repository files
+        run: |
+          # apply-zip.yml و فایل‌های Git حفظ می‌شوند تا workflow خودش پاک نشود
+          rsync -a --delete \
+            --exclude=/.git/ \
+            --exclude=/.github/workflows/apply-zip.yml \
+            "$ROOT"/ ./
+          rm -f "$ZIP"
+
+      - name: Commit and push
+        run: |
+          git config user.name "uc-max-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -q -m "Apply uploaded zip"
+            git push
+          fi
+
+      - name: Start the APK build
+        if: inputs.build
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          for i in $(seq 1 18); do
+            if gh workflow run build.yml --ref "$GITHUB_REF_NAME"; then
+              echo "بیلد شروع شد. از تب Actions دنبالش کن."; exit 0
+            fi
+            echo "GitHub هنوز build.yml را ندیده، ${i}/18 دوباره تلاش می‌کنم..."
+            sleep 10
+          done
+          echo "::error::شروع بیلد ناموفق بود. از تب Actions گزینه Build UC MAX را دستی اجرا کن."; exit 1
