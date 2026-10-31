@@ -168,6 +168,14 @@ jobs:
           name: ca-psiphon-aar
           path: V2rayNG/shirokhorshid/libs
 
+      - name: Fetch native sources (hev-socks5-tunnel and AndroidLibXrayLite)
+        run: |
+          # در زیپ، پوشه‌های submodule خالی هستند؛ آن‌ها را مستقیم از GitHub می‌گیریم
+          rm -rf hev-socks5-tunnel AndroidLibXrayLite
+          git clone --recursive --depth 1 https://github.com/heiher/hev-socks5-tunnel hev-socks5-tunnel
+          git clone --depth 1 https://github.com/2dust/AndroidLibXrayLite AndroidLibXrayLite
+          git -C AndroidLibXrayLite fetch --tags --depth 1 origin 'refs/tags/*:refs/tags/*' || true
+
       - name: Build libhevtun
         run: bash compile-hevtun.sh
 
