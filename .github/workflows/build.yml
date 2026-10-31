@@ -52,7 +52,7 @@ jobs:
           ls -la "$RUNNER_TEMP/out/${{ matrix.abi }}"
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: psiphon-${{ matrix.abi }}
           path: ${{ runner.temp }}/out/${{ matrix.abi }}/libpsiphon.so
@@ -148,19 +148,19 @@ jobs:
           ls -la apks
 
       - name: Upload arm64-v8a
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: UC-MAX-arm64-v8a
           path: apks/*arm64-v8a*.apk
 
       - name: Upload armeabi-v7a
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: UC-MAX-armeabi-v7a
           path: apks/*armeabi-v7a*.apk
 
       - name: Upload universal
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: UC-MAX-universal
           path: apks/*universal*.apk
