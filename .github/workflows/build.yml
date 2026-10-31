@@ -129,6 +129,7 @@ jobs:
       - name: Build three APKs
         env:
           APP_VERSION_CODE: ${{ github.run_number }}
+          PSIPHON_EMBEDDED_SERVER_LIST: ${{ secrets.PSIPHON_EMBEDDED_SERVER_LIST }}
         run: |
           cd V2rayNG
           echo "sdk.dir=${ANDROID_HOME}" > local.properties

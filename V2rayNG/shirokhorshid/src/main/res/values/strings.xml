@@ -244,4 +244,18 @@
     <string name="lan_proxy_configure_hint">Configure other devices\' proxy settings with these addresses</string>
     <string name="log_lan_sharing_enabled">Network sharing enabled — proxy exposed on LAN</string>
 
+
+    <!-- Core-start lifecycle entries written to the Psiphon Logs page (status logs). -->
+    <string name="psiphon_core_starting">Psiphon core starting: embedded servers=%1$s, remote list URLs=%2$s, upstream proxy=%3$s, egress region=%4$s</string>
+    <string name="psiphon_core_no_embedded">No embedded Psiphon server entries in this build (count=%1$s); bootstrap depends on the remote server list</string>
+    <string name="psiphon_core_already_running">Psiphon already running; start skipped (%1$s)</string>
+    <string name="psiphon_core_socks_ready">Psiphon local SOCKS port listening on %1$s</string>
+    <string name="psiphon_core_socks_in_use">Psiphon local SOCKS port %1$s is already in use</string>
+    <string name="psiphon_core_connected">Psiphon tunnel connected after %1$s ms</string>
+    <string name="psiphon_core_regions">Psiphon egress regions received: count=%1$s, list=%2$s</string>
+    <string name="psiphon_core_notice">Psiphon notice: %1$s</string>
+    <string name="psiphon_core_exited">Psiphon process exited before ready (portReady=%1$s, tunnelConnected=%2$s)</string>
+    <string name="psiphon_core_start_failed">Psiphon start failed after %1$s ms: %2$s (portReady=%3$s, tunnelConnected=%4$s, regions=%5$s, notices=%6$s, lastNotice=%7$s)</string>
+    <string name="psiphon_core_stopped">Psiphon stopped (%1$s)</string>
+    <string name="psiphon_core_stop_error">Psiphon stop error: %1$s</string>
 </resources>
