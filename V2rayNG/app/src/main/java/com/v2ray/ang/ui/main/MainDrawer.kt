@@ -38,6 +38,7 @@ enum class MainDestination(@DrawableRes val iconRes: Int, @StringRes val labelRe
     Subscriptions(R.drawable.ic_subscriptions_24dp, R.string.title_sub_setting),
     PerAppProxy(R.drawable.ic_per_apps_24dp, R.string.per_app_proxy_settings),
     Routing(R.drawable.ic_routing_24dp, R.string.routing_settings_title),
+    Psiphon(R.drawable.ic_about_24dp, R.string.drawer_psiphon),
     UserAssets(R.drawable.ic_file_24dp, R.string.title_user_asset_setting),
     Settings(R.drawable.ic_settings_24dp, R.string.title_settings),
     Promotion(R.drawable.ic_promotion_24dp, R.string.title_pref_promotion),
@@ -51,6 +52,7 @@ private val primaryDrawerItems = listOf(
     MainDestination.Subscriptions,
     MainDestination.PerAppProxy,
     MainDestination.Routing,
+    MainDestination.Psiphon,
     MainDestination.UserAssets,
     MainDestination.Settings
 )

@@ -566,4 +566,14 @@
     <string name="sub_info_unlimited">Unlimited</string>
 
     <string name="menu_item_import_config_psiphon_hop">Add Psiphon hop</string>
+    <string name="drawer_psiphon">Psiphon (Shir o Khorshid)</string>
+    <string name="connection_mode_title">Connection mode</string>
+    <string name="connection_mode_v2ray">V2ray only</string>
+    <string name="connection_mode_v2ray_desc">Direct, no intermediary</string>
+    <string name="connection_mode_psiphon">Psiphon only</string>
+    <string name="connection_mode_psiphon_desc">Direct, no intermediary</string>
+    <string name="connection_mode_psiphon_via_v2ray">Psiphon via V2ray</string>
+    <string name="connection_mode_psiphon_via_v2ray_desc">Chained</string>
+    <string name="connection_mode_v2ray_via_psiphon">V2ray via Psiphon</string>
+    <string name="connection_mode_v2ray_via_psiphon_desc">Chained</string>
 </resources>

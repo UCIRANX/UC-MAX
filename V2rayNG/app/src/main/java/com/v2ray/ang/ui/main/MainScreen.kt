@@ -189,6 +189,7 @@ fun MainScreen(
                     displayText = displayText,
                     isRunning = isRunning,
                     isDarkTheme = isDarkTheme,
+                    connectionMode = uiState.connectionMode,
                     onAction = onAction
                 )
             },

@@ -46,6 +46,7 @@ fun MainBottomBar(
     displayText: String,
     isRunning: Boolean,
     isDarkTheme: Boolean,
+    connectionMode: com.v2ray.ang.enums.ConnectionMode,
     onAction: (MainAction) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -66,6 +67,11 @@ fun MainBottomBar(
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             AppDivider()
+            ConnectionModeCard(
+                selected = connectionMode,
+                enabled = !isRunning,
+                onSelect = { mode -> onAction(MainAction.SetConnectionMode(mode)) }
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

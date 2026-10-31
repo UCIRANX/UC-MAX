@@ -64,6 +64,7 @@ object AppConfig {
     const val PREF_PROXY_SHARING = "pref_proxy_sharing_enabled"
     const val PREF_ENABLE_LOCAL_PROXY = "pref_enable_local_proxy"
     const val PREF_SOCKS_PORT = "pref_socks_port"
+    const val PREF_CONNECTION_MODE = "pref_connection_mode"
     const val PREF_DYNAMIC_SOCKS_PORT = "pref_dynamic_socks_port"
     const val PREF_SOCKS_USERNAME = "pref_socks_username"
     const val PREF_SOCKS_PASSWORD = "pref_socks_password"

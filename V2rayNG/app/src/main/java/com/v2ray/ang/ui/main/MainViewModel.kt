@@ -82,7 +82,8 @@ class MainViewModel(
             selectedGroupId = dataSource.getSelectedSubscriptionId(),
             selectedGuid = dataSource.getSelectServer(),
             confirmRemove = dataSource.getConfirmRemove(),
-            doubleColumnDisplay = dataSource.getDoubleColumnDisplay()
+            doubleColumnDisplay = dataSource.getDoubleColumnDisplay(),
+            connectionMode = com.v2ray.ang.core.ConnectionModeManager.currentMode()
         )
     )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -309,6 +310,7 @@ class MainViewModel(
             MainAction.ImportConfigLocal,
             is MainAction.ImportManually,
             MainAction.ImportPsiphonHop,
+            is MainAction.SetConnectionMode,
             MainAction.RestartService,
             MainAction.LocateSelectedServer,
             is MainAction.EditServer,
@@ -735,6 +737,21 @@ class MainViewModel(
             } catch (error: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to load selected group: $id", error)
             }
+        }
+    }
+
+    /** تغییر حالت اتصال؛ هنگام اتصال فعال تغییر ممنوع است */
+    fun setConnectionMode(mode: com.v2ray.ang.enums.ConnectionMode) {
+        if (_uiState.value.isRunning) return
+        viewModelScope.launch(ioDispatcher) {
+            com.v2ray.ang.core.ConnectionModeManager.setMode(mode)
+            if (mode == com.v2ray.ang.enums.ConnectionMode.PSIPHON_ONLY ||
+                mode == com.v2ray.ang.enums.ConnectionMode.V2RAY_VIA_PSIPHON
+            ) {
+                com.v2ray.ang.core.PsiphonCoreManager.createHopProfile()
+                reloadServerList()
+            }
+            _uiState.update { it.copy(connectionMode = mode) }
         }
     }
 

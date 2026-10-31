@@ -26,7 +26,8 @@ data class MainUiState(
     val locateTarget: LocateTarget? = null,
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
-    val shareQRCodeBitmap: android.graphics.Bitmap? = null
+    val shareQRCodeBitmap: android.graphics.Bitmap? = null,
+    val connectionMode: com.v2ray.ang.enums.ConnectionMode = com.v2ray.ang.enums.ConnectionMode.V2RAY_ONLY
 )
 
 /**
@@ -53,6 +54,7 @@ sealed interface MainAction {
     data object ImportConfigLocal : MainAction
     data class ImportManually(val type: Int) : MainAction
     data object ImportPsiphonHop : MainAction
+    data class SetConnectionMode(val mode: com.v2ray.ang.enums.ConnectionMode) : MainAction
     data object RestartService : MainAction
     data object LocateSelectedServer : MainAction
 

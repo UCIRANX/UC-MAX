@@ -565,4 +565,14 @@
     <string name="sub_info_unlimited">نامحدود</string>
 
     <string name="menu_item_import_config_psiphon_hop">افزودن هاپ Psiphon</string>
+    <string name="drawer_psiphon">شیر و خورشید (Psiphon)</string>
+    <string name="connection_mode_title">حالت اتصال</string>
+    <string name="connection_mode_v2ray">فقط V2ray</string>
+    <string name="connection_mode_v2ray_desc">تکی، بدون واسطه</string>
+    <string name="connection_mode_psiphon">فقط Psiphon</string>
+    <string name="connection_mode_psiphon_desc">تکی، بدون واسطه</string>
+    <string name="connection_mode_psiphon_via_v2ray">Psiphon از V2ray</string>
+    <string name="connection_mode_psiphon_via_v2ray_desc">زنجیره‌ای</string>
+    <string name="connection_mode_v2ray_via_psiphon">V2ray از Psiphon</string>
+    <string name="connection_mode_v2ray_via_psiphon_desc">زنجیره‌ای</string>
 </resources>

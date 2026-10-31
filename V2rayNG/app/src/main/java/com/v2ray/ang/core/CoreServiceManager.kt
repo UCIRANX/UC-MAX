@@ -128,12 +128,15 @@ object CoreServiceManager {
 
     @Throws(Exception::class)
     private fun launchCore(service: Service, vpnInterface: ParcelFileDescriptor?, isReload: Boolean = false) {
-        val guid = MmkvManager.getSelectServer() ?: error("No server selected")
+        val selectedGuid = MmkvManager.getSelectServer() ?: error("No server selected")
+        val plan = ConnectionModeManager.plan(selectedGuid)
+        val guid = plan.guid
         val config = MmkvManager.decodeServerConfig(guid) ?: error("Failed to decode server config")
 
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Starting core loop for ${config.remarks}")
-        // اگر پروفایل یا زنجیره‌اش به هاپ Psiphon نیاز دارد، باید قبل از Xray بالا بیاید
-        if (PsiphonCoreManager.isRequiredByChain(config)) {
+        // Psiphon در حالت‌های تکی و «V2ray از Psiphon» (و زنجیره‌های دستی) باید قبل از Xray آماده باشد
+        val psiphonBeforeXray = plan.usePsiphon && !plan.psiphonViaXray
+        if (psiphonBeforeXray || PsiphonCoreManager.isRequiredByChain(config)) {
             PsiphonCoreManager.start(service)
         }
         val result = CoreConfigManager.getV2rayConfig(service, guid)
@@ -162,6 +165,11 @@ object CoreServiceManager {
 
         if (!isRunning()) {
             error("Core failed to start")
+        }
+
+        // «Psiphon از V2ray»: Psiphon بعد از Xray و با upstream از SOCKS محلی Xray بالا می‌آید
+        if (plan.usePsiphon && plan.psiphonViaXray) {
+            PsiphonCoreManager.start(service, "socks5://127.0.0.1:${SettingsManager.getSocksPort()}")
         }
 
         if (browserDialer != null) {
