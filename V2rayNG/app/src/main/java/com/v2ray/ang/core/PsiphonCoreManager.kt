@@ -2,6 +2,7 @@ package com.v2ray.ang.core
 
 import android.content.Context
 import ca.psiphon.PsiphonTunnel
+import com.psiphon3.psiphonlibrary.EgressRegionStore
 import com.psiphon3.psiphonlibrary.EmbeddedValues
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -119,6 +120,11 @@ object PsiphonCoreManager {
             override fun onConnected() {
                 LogUtil.i(AppConfig.TAG, "Psiphon: تونل واقعاً برقرار شد")
                 tunnelConnected.complete(Unit)
+            }
+
+            override fun onAvailableEgressRegions(regions: List<String>) {
+                LogUtil.i(AppConfig.TAG, "Psiphon: ${regions.size} کشور/سرور در دسترس است")
+                EgressRegionStore.saveKnownRegions(context.applicationContext, regions)
             }
 
             override fun onDiagnosticMessage(message: String) {

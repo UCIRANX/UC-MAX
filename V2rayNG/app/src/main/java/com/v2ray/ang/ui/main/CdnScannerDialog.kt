@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,18 +40,24 @@ fun CdnScannerDialog(onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState()),
             ) {
+                Text(
+                    stringResource(R.string.cdn_scanner_ranges),
+                    style = MaterialTheme.typography.labelMedium,
+                )
                 OutlinedTextField(
                     value = rangesText,
                     onValueChange = { rangesText = it },
-                    label = { Text(stringResource(R.string.cdn_scanner_ranges)) },
                     minLines = 2,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Text(
+                    stringResource(R.string.cdn_scanner_manual),
+                    style = MaterialTheme.typography.labelMedium,
+                )
                 OutlinedTextField(
                     value = manualText,
                     onValueChange = { manualText = it },
-                    label = { Text(stringResource(R.string.cdn_scanner_manual)) },
                     maxLines = 2,
                     modifier = Modifier.fillMaxWidth(),
                 )

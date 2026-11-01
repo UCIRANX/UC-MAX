@@ -49,11 +49,9 @@ val propagationId = System.getenv("PSIPHON_PROPAGATION_CHANNEL_ID")?.takeIf { it
 val sponsorId = System.getenv("PSIPHON_SPONSOR_ID")?.takeIf { it.isNotBlank() } ?: "FFFFFFFFFFFFFFFF"
 val remoteUrlsJson = System.getenv("PSIPHON_REMOTE_SERVER_LIST_URLS_JSON") ?: """[{"URL":"aHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tLy9wc2lwaG9uL3dlYi9tanI0LXAyM3ItcHV3bC9zZXJ2ZXJfbGlzdF9jb21wcmVzc2Vk"}]"""
 val remoteSigKey = System.getenv("PSIPHON_REMOTE_SERVER_LIST_SIGNATURE_PUBLIC_KEY") ?: "MIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAt7Ls+/39r+T6zNW7GiVpJfzq/xvL9SBH5rIFnk0RXYEYavax3WS6HOD35eTAqn8AniOwiH+DOkvgSKF2caqk/y1dfq47Pdymtwzp9ikpB1C5OfAysXzBiwVJlCdajBKvBZDerV1cMvRzCKvKwRmvDmHgphQQ7WfXIGbRbmmk6opMBh3roE42KcotLFtqp0RRwLtcBRNtCdsrVsjiI1Lqz/lH+T61sGjSjQ3CHMuZYSQJZo/KrvzgQXpkaCTdbObxHqb6/+i1qaVOfEsvjoiyzTxJADvSytVtcTjijhPEV6XskJVHE1Zgl+7rATr/pDQkw6DPCNBS1+Y6fy7GstZALQXwEDN/qhQI9kWkHijT8ns+i1vGg00Mk/6J75arLhqcodWsdeG/M/moWgqQAnlZAGVtJI1OgeF5fsPpXu4kctOfuZlGjVZXQNW34aOzm8r8S0eVZitPlbhcPiR4gT/aSMz/wd8lZlzZYsje/Jr8u/YtlwjjreZrGRmG8KMOzukV3lLmMppXFMvl4bxv6YFEmIuTsOhbLTwFgh7KYNjodLj/LsqRVfwz31PgWQFTEPICV7GCvgVlPRxnofqKSjgTWI4mxDhBpVcATvaoBl1L/6WLbFvBsoAUBItWwctO2xalKxF5szhGm8lccoc5MZr8kfE0uxMgsxz4er68iCID+rsCAQM="
-// لیست سرورهای داخلی Psiphon (هر خط یک سرور، به‌صورت "0 0 0 0 {json}").
-// اولویت با متغیر محیطی PSIPHON_EMBEDDED_SERVER_LIST است؛ اگر خالی بود، فایل embedded_server_list.txt کنار همین فایل خوانده می‌شود.
-val embeddedListFile = file("embedded_server_list.txt")
-val embeddedListText = System.getenv("PSIPHON_EMBEDDED_SERVER_LIST")?.takeIf { it.isNotBlank() }
-    ?: if (embeddedListFile.exists()) embeddedListFile.readText(Charsets.UTF_8) else ""
+// لیست سرورهای داخلی Psiphon فقط از متغیر محیطی PSIPHON_EMBEDDED_SERVER_LIST خوانده می‌شود.
+// فایل دستی embedded_server_list.txt حذف شده تا Psiphon لیست سرورهایش را فقط از کد خودش بگیرد.
+val embeddedListText = System.getenv("PSIPHON_EMBEDDED_SERVER_LIST")?.takeIf { it.isNotBlank() } ?: ""
 // هر سرور به‌صورت hex کل خط (شامل پیشوند "0 0 0 0 " و JSON) در یک خط بدون فاصله نوشته می‌شود.
 // فقط با خط جدید جدا می‌شود، چون هر ورودی خودش فاصله دارد.
 val embeddedServerEntries = embeddedListText
