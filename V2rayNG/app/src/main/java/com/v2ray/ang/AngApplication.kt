@@ -45,6 +45,12 @@ class AngApplication : Application() {
         // Ensure critical preference defaults are present in MMKV early
         SettingsManager.initApp(this)
 
+        // Speed display is enabled by default; applied once so later user choices are kept
+        if (!MmkvManager.decodeSettingsBool("pref_speed_default_applied_v1", false)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_SPEED_ENABLED, true)
+            MmkvManager.encodeSettings("pref_speed_default_applied_v1", true)
+        }
+
         // Initialize theme state from MMKV
         ThemeManager.refresh()
 

@@ -19,7 +19,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -46,6 +51,7 @@ fun MainTopBar(
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val maxMenuHeight = LocalConfiguration.current.screenHeightDp.dp - statusBarHeight - navBarHeight - 20.dp
+    val uriHandler = LocalUriHandler.current
 
     AppTopBar(
         title = stringResource(R.string.title_server),
@@ -71,6 +77,14 @@ fun MainTopBar(
             if (!showSearch) {
                 IconButton(onClick = { onSearchToggle(true) }) {
                     Icon(painterResource(R.drawable.ic_search_24dp), contentDescription = stringResource(R.string.acc_search))
+                }
+                IconButton(onClick = { uriHandler.openUri("https://t.me/uciranir") }) {
+                    Text(
+                        text = "UC",
+                        color = Color(0xFFE53935),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                    )
                 }
             }
             Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
