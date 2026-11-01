@@ -198,10 +198,6 @@ class MainActivity : HelperBaseComponentActivity() {
             toast(R.string.title_file_chooser)
             return
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
-        ) {
-            checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
-        }
         mainViewModel.setConnecting(true)
         LauncherManager.startService(this)
     }

@@ -254,7 +254,15 @@ public class PsiphonTunnel {
                 hostService.onHttpProxyPortInUse(data.optInt("port", 0));
                 break;
             case "Connecting":
+            case "ConnectingServer":
                 hostService.onConnecting();
+                break;
+            case "ActiveTunnel":
+                // نوتیس واقعی اتصال تونل (در لاگ دیده شد)
+                hostService.onConnected();
+                break;
+            case "ConnectedServerRegion":
+                hostService.onClientRegion(data.optString("serverRegion", ""));
                 break;
             case "Tunnels":
                 if (data.optInt("count", 0) > 0) {

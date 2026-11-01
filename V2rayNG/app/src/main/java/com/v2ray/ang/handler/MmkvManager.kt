@@ -252,6 +252,7 @@ object MmkvManager {
         if (guid.isBlank()) {
             return null
         }
+        com.v2ray.ang.core.VirtualProfiles.resolve(guid)?.let { return it }
         val json = profileFullStorage.decodeString(guid)
         if (json.isNullOrBlank()) {
             return null
