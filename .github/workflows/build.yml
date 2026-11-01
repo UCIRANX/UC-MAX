@@ -4,6 +4,11 @@ name: Build UC MAX
 
 on:
   workflow_dispatch:
+    inputs:
+      release:
+        description: "بعد از بیلد، APKها در Releases گذاشته شوند؟"
+        type: boolean
+        default: true
   push:
     tags:
       - 'v*'
@@ -166,8 +171,11 @@ jobs:
           name: UC-MAX-universal
           path: apks/*universal*.apk
 
-      - name: Create GitHub release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('UC MAX build {0}', github.run_number) }}
           files: apks/*.apk
+          fail_on_unmatched_files: true
