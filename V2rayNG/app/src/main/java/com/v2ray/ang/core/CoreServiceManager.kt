@@ -141,7 +141,7 @@ object CoreServiceManager {
         if (psiphonBeforeXray) {
             PsiphonCoreManager.start(service)
         }
-        val result = CoreConfigManager.getV2rayConfig(service, guid, plan.exitGuid)
+        val result = CoreConfigManager.getV2rayConfig(service, guid, plan.exitGuid, plan.usePsiphon)
         LogUtil.d(AppConfig.TAG, result.content)
         if (!result.status) {
             error(result.errorMessage.ifBlank { "Failed to get V2Ray config" })

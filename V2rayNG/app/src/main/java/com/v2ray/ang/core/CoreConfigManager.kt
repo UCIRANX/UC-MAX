@@ -31,7 +31,12 @@ object CoreConfigManager {
     /**
      * Build the runtime configuration for normal startup.
      */
-    fun getV2rayConfig(context: Context, guid: String, psiphonExitGuid: String? = null): ConfigResult {
+    fun getV2rayConfig(
+        context: Context,
+        guid: String,
+        psiphonExitGuid: String? = null,
+        usePsiphon: Boolean = false,
+    ): ConfigResult {
         try {
             val configContext = CoreConfigContextBuilder.build(context, guid)
                 ?: return ConfigResult(
@@ -43,6 +48,9 @@ object CoreConfigManager {
                 return buildV2rayCustomConfig(configContext)
             }
             val unified = buildUnifiedConfig(configContext)
+            if (usePsiphon) {
+                applyPsiphonDnsRouting(unified)
+            }
             if (psiphonExitGuid != null) {
                 applyPsiphonUpstreamExit(unified, psiphonExitGuid)
             }
@@ -175,6 +183,34 @@ object CoreConfigManager {
      * The analyzed outbound plan is consumed in order and converted to concrete
      * outbounds before routing, DNS, and runtime extras are assembled.
      */
+    /**
+     * DNS در حالت‌های Psiphon:
+     * Psiphon فقط TCP را حمل می‌کند و UDP (از جمله DNS روی 1.1.1.1:53) پاسخ داده نمی‌شود.
+     * بنابراین تمام درخواست‌های UDP پورت 53 به outbound داخلی dns-out می‌روند؛ dns-out از DNS over HTTPS
+     * (TCP) از طریق routing استفاده می‌کند که از Psiphon عبور می‌کند.
+     */
+    private fun applyPsiphonDnsRouting(v2rayConfig: V2rayConfig) {
+        if (v2rayConfig.outbounds.none { it.protocol == "dns" && it.tag == "dns-out" }) {
+            v2rayConfig.outbounds.add(
+                V2rayConfig.OutboundBean(
+                    protocol = "dns",
+                    tag = "dns-out",
+                    settings = null,
+                    streamSettings = null,
+                    mux = null
+                )
+            )
+        }
+        v2rayConfig.routing.rules.add(
+            0,
+            V2rayConfig.RoutingBean.RulesBean(
+                network = "udp",
+                port = "53",
+                outboundTag = "dns-out",
+            )
+        )
+    }
+
     /**
      * حالت «Psiphon از V2ray»:
      * ترافیک گوشی از هاپ Psiphon (outbound پیش‌فرض) خارج می‌شود و Psiphon خودش از طریق یک inbound
