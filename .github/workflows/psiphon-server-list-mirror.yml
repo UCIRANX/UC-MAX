@@ -1,0 +1,52 @@
+name: Mirror Psiphon server list
+
+# Downloads the Psiphon remote server list every 12 hours and commits the raw file to the repo.
+# The file is stored byte-for-byte as downloaded, so Psiphon's signature check still passes.
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: psiphon-server-list-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download server list
+        env:
+          SOURCE_URL: https://s3.amazonaws.com//psiphon/web/mjr4-p23r-puwl/server_list_compressed
+        run: |
+          set -euo pipefail
+          mkdir -p psiphon-mirror
+          curl -fsSL --retry 3 --retry-delay 5 --max-time 120 \
+            -o psiphon-mirror/server_list_compressed.tmp "$SOURCE_URL"
+          size=$(stat -c %s psiphon-mirror/server_list_compressed.tmp)
+          if [ "$size" -lt 1024 ]; then
+            echo "Downloaded file is too small ($size bytes), refusing to update the mirror"
+            exit 1
+          fi
+          mv psiphon-mirror/server_list_compressed.tmp psiphon-mirror/server_list_compressed
+          sha256sum psiphon-mirror/server_list_compressed
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add psiphon-mirror/server_list_compressed
+          if git diff --cached --quiet; then
+            echo "Server list unchanged"
+            exit 0
+          fi
+          git commit -m "Update Psiphon server list mirror"
+          git push
