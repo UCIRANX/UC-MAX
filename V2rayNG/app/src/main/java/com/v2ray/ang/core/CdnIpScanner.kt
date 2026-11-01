@@ -19,6 +19,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
@@ -333,6 +334,8 @@ object CdnIpScanner {
     /** IPهای تست‌شدهٔ همین اجرا؛ با شروع اجرای جدید پاک می‌شود تا هر اسکن ترتیب تازه داشته باشد */
     private val runTested = LinkedHashSet<String>()
     private var job: Job? = null
+    /** سوکت‌های در حال تست؛ stop آن‌ها را می‌بندد تا توقف فوری شود */
+    private val activeSockets: MutableSet<Socket> = ConcurrentHashMap.newKeySet()
     private var appContext: Context? = null
     /** آیا در اجرای فعلی حداقل یک IP سالم پیدا و ذخیره شده است؛ تا قبل از آن لیست قبلی دست‌نخورده می‌ماند */
     private var runHasHealthy = false
@@ -399,17 +402,28 @@ object CdnIpScanner {
     }
 
     /** تست یک IP: اتصال TCP به 443 و هندشیک TLS با SNI آکامای */
-    private fun probe(ip: String): Boolean = try {
+    private fun probe(ip: String): Boolean {
         val raw = Socket()
-        raw.connect(InetSocketAddress(ip, 443), CONNECT_TIMEOUT_MS)
-        raw.soTimeout = IO_TIMEOUT_MS
-        val ssl = (SSLSocketFactory.getDefault() as SSLSocketFactory)
-            .createSocket(raw, PROBE_SNI, 443, true) as SSLSocket
-        ssl.startHandshake()
-        ssl.close()
-        true
-    } catch (e: Exception) {
-        false
+        activeSockets.add(raw)
+        return try {
+            raw.connect(InetSocketAddress(ip, 443), CONNECT_TIMEOUT_MS)
+            raw.soTimeout = IO_TIMEOUT_MS
+            val ssl = (SSLSocketFactory.getDefault() as SSLSocketFactory)
+                .createSocket(raw, PROBE_SNI, 443, true) as SSLSocket
+            activeSockets.add(ssl)
+            try {
+                ssl.startHandshake()
+            } finally {
+                activeSockets.remove(ssl)
+                runCatching { ssl.close() }
+            }
+            true
+        } catch (e: Exception) {
+            false
+        } finally {
+            activeSockets.remove(raw)
+            runCatching { raw.close() }
+        }
     }
 
     /** شروع اسکن. manualMode=false یعنی رنج‌ها، true یعنی IP/رنج‌های دستی. */
@@ -469,6 +483,9 @@ object CdnIpScanner {
     /** توقف اسکن؛ IPهای سالم تا این لحظه قبلاً ذخیره شده‌اند */
     fun stop() {
         job?.cancel()
+        // اتصال‌های blocking را فوراً می‌بندیم تا probe ها بدون انتظار تمام شوند
+        activeSockets.forEach { runCatching { it.close() } }
+        activeSockets.clear()
         _state.update { it.copy(running = false) }
     }
 

@@ -52,7 +52,6 @@ private val primaryDrawerItems = listOf(
     MainDestination.Subscriptions,
     MainDestination.PerAppProxy,
     MainDestination.Routing,
-    MainDestination.Psiphon,
     MainDestination.UserAssets,
     MainDestination.Settings
 )

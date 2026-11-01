@@ -21,7 +21,7 @@ import com.v2ray.ang.R
 import com.v2ray.ang.enums.ConnectionMode
 
 @StringRes
-private fun ConnectionMode.titleRes(): Int = when (this) {
+internal fun ConnectionMode.titleRes(): Int = when (this) {
     ConnectionMode.V2RAY_ONLY -> R.string.connection_mode_v2ray
     ConnectionMode.PSIPHON_ONLY -> R.string.connection_mode_psiphon
     ConnectionMode.PSIPHON_VIA_V2RAY -> R.string.connection_mode_psiphon_via_v2ray
@@ -29,7 +29,7 @@ private fun ConnectionMode.titleRes(): Int = when (this) {
 }
 
 @StringRes
-private fun ConnectionMode.descRes(): Int = when (this) {
+internal fun ConnectionMode.descRes(): Int = when (this) {
     ConnectionMode.V2RAY_ONLY -> R.string.connection_mode_v2ray_desc
     ConnectionMode.PSIPHON_ONLY -> R.string.connection_mode_psiphon_desc
     ConnectionMode.PSIPHON_VIA_V2RAY -> R.string.connection_mode_psiphon_via_v2ray_desc

@@ -43,14 +43,15 @@ fun CdnScannerDialog(onDismiss: () -> Unit) {
                     value = rangesText,
                     onValueChange = { rangesText = it },
                     label = { Text(stringResource(R.string.cdn_scanner_ranges)) },
-                    minLines = 3,
+                    minLines = 2,
+                    maxLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = manualText,
                     onValueChange = { manualText = it },
                     label = { Text(stringResource(R.string.cdn_scanner_manual)) },
-                    minLines = 2,
+                    maxLines = 2,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(

@@ -40,6 +40,19 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import com.psiphon3.psiphonlibrary.EgressRegionPicker
+import com.v2ray.ang.core.LauncherManager
+import com.v2ray.ang.enums.ConnectionMode
+import com.v2ray.ang.ui.main.titleRes
 import com.v2ray.ang.ui.compose.AppDivider
 import com.v2ray.ang.ui.compose.colorFabActive
 import com.v2ray.ang.ui.compose.colorFabInactiveDark
@@ -53,9 +66,12 @@ fun MainBottomBar(
     isConnecting: Boolean = false,
     isDarkTheme: Boolean,
     connectionMode: com.v2ray.ang.enums.ConnectionMode,
+    onNavigate: (MainDestination) -> Unit,
     onAction: (MainAction) -> Unit
 ) {
     var showCdnScanner by remember { mutableStateOf(false) }
+    var showModePicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val rotationAnim = remember { Animatable(0f) }
 
@@ -74,16 +90,78 @@ fun MainBottomBar(
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             AppDivider()
-            ConnectionModeCard(
-                selected = connectionMode,
-                enabled = !isRunning && !isConnecting,
-                onSelect = { mode -> onAction(MainAction.SetConnectionMode(mode)) }
-            )
-            TextButton(
-                onClick = { showCdnScanner = true },
-                modifier = Modifier.padding(horizontal = 12.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.cdn_scanner_button))
+                CompactButton(
+                    text = stringResource(connectionMode.titleRes()),
+                    enabled = !isRunning && !isConnecting,
+                    modifier = Modifier.weight(1f),
+                    onClick = { showModePicker = true }
+                )
+                CompactButton(
+                    text = stringResource(R.string.cdn_scanner_button),
+                    enabled = true,
+                    modifier = Modifier.weight(1f),
+                    onClick = { showCdnScanner = true }
+                )
+                CompactButton(
+                    text = stringResource(R.string.bottom_psiphon),
+                    enabled = true,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onNavigate(MainDestination.Psiphon) }
+                )
+                CompactButton(
+                    text = stringResource(R.string.bottom_country),
+                    enabled = true,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        EgressRegionPicker.show(context) {
+                            if (isRunning) LauncherManager.restartService(context)
+                        }
+                    }
+                )
+            }
+            if (showModePicker) {
+                AlertDialog(
+                    onDismissRequest = { showModePicker = false },
+                    title = { Text(stringResource(R.string.connection_mode_title)) },
+                    text = {
+                        Column {
+                            ConnectionMode.entries.forEach { mode ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .selectable(
+                                            selected = mode == connectionMode,
+                                            role = Role.RadioButton,
+                                            onClick = {
+                                                onAction(MainAction.SetConnectionMode(mode))
+                                                showModePicker = false
+                                            }
+                                        )
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(selected = mode == connectionMode, onClick = null)
+                                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                                        Text(stringResource(mode.titleRes()), style = MaterialTheme.typography.bodyMedium)
+                                        Text(stringResource(mode.descRes()), style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showModePicker = false }) {
+                            Text(stringResource(R.string.cdn_scanner_close))
+                        }
+                    }
+                )
             }
             if (showCdnScanner) {
                 CdnScannerDialog(onDismiss = { showCdnScanner = false })
@@ -152,5 +230,28 @@ fun MainBottomBar(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CompactButton(
+    text: String,
+    enabled: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

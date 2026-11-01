@@ -191,6 +191,7 @@ fun MainScreen(
                     isConnecting = uiState.isConnecting,
                     isDarkTheme = isDarkTheme,
                     connectionMode = uiState.connectionMode,
+                    onNavigate = onNavigate,
                     onAction = onAction
                 )
             },
