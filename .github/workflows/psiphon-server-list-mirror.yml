@@ -2,7 +2,6 @@ name: Mirror Psiphon server list
 
 # Downloads the Psiphon remote server list every 12 hours and commits the raw file to the repo.
 # The file is stored byte-for-byte as downloaded, so Psiphon's signature check still passes.
-# embedded_server_list.txt is derived from it and is used as the built-in server list in the APK.
 
 on:
   schedule:
@@ -38,27 +37,6 @@ jobs:
           fi
           mv psiphon-mirror/server_list_compressed.tmp psiphon-mirror/server_list_compressed
           sha256sum psiphon-mirror/server_list_compressed
-
-      - name: Build embedded server entries
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json, zlib, binascii, pathlib
-          raw = pathlib.Path("psiphon-mirror/server_list_compressed").read_bytes()
-          doc = json.loads(zlib.decompress(raw))
-          lines = []
-          for chunk in doc["data"].split("\n"):
-              chunk = chunk.strip()
-              if not chunk:
-                  continue
-              text = binascii.unhexlify(chunk).decode("utf-8")
-              if "{" in text:
-                  lines.append(text)
-          if not lines:
-              raise SystemExit("no entries found in server list")
-          pathlib.Path("psiphon-mirror/embedded_server_list.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-          print(len(lines), "entries written")
-          PY
 
       - name: Commit if changed
         run: |

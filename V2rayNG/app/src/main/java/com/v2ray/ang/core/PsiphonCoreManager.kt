@@ -15,8 +15,6 @@ import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.concurrent.CancellationException
 
 /**
@@ -35,15 +33,6 @@ object PsiphonCoreManager {
 
     /** مهلت انتظار: هم پورت SOCKS و هم اتصال واقعی تونل باید در این زمان برقرار شوند */
     private const val START_TIMEOUT_MS = 90_000L
-    /** Mirror of the Psiphon remote server list, refreshed by .github/workflows/psiphon-server-list-mirror.yml */
-    private const val MIRROR_SERVER_LIST_URL =
-        "https://raw.githubusercontent.com/UCIRANX/UC-MAX/main/psiphon-mirror/server_list_compressed"
-    /** Original Psiphon remote server list on Amazon S3. Used whenever the mirror is not usable. */
-    private const val ORIGINAL_SERVER_LIST_URL =
-        "https://s3.amazonaws.com//psiphon/web/mjr4-p23r-puwl/server_list_compressed"
-    private const val MIRROR_PROBE_TIMEOUT_MS = 10_000
-    private const val MIRROR_MIN_BYTES = 1024
-    private const val MIRROR_MAX_BYTES = 16 * 1024 * 1024
     private const val PROPAGATION_CHANNEL_ID = "FFFFFFFFFFFFFFFF"
     private const val SPONSOR_ID = "FFFFFFFFFFFFFFFF"
 
@@ -156,7 +145,8 @@ object PsiphonCoreManager {
         pendingPort = portReady
         pendingTunnel = tunnelConnected
         try {
-            psiphon.startTunneling(EmbeddedValues.EMBEDDED_SERVER_LIST.joinToString("\n"))
+            // The entries come from the mirror, the S3 original, the disk cache or the APK, in that order.
+            psiphon.startTunneling(PsiphonServerList.resolve(context.applicationContext).joinToString("\n"))
             // ترتیب ایمنی: ترافیک زنجیره بدون تونل آماده نباید خارج شود. انتظار حتماً محدود است.
             runBlocking {
                 withTimeout(START_TIMEOUT_MS) {
@@ -194,59 +184,13 @@ object PsiphonCoreManager {
     }
 
     /**
-     * Remote server list URLs for Psiphon.
-     * The GitHub mirror is probed first. If the probe succeeds, it comes first and the Amazon S3
-     * original follows it as a fallback. If the probe fails, only the S3 original is used.
+     * Psiphon's own remote list fetch. The core already receives entries directly from
+     * PsiphonServerList, so these URLs are only a secondary source for the core.
      */
-    private fun remoteServerListUrls(): JSONArray {
-        val result = JSONArray()
-        if (isMirrorReachable()) {
-            LogUtil.i(AppConfig.TAG, "Psiphon: mirror available, using it first")
-            result.put(JSONObject().put("URL", encodeUrl(MIRROR_SERVER_LIST_URL)))
-        } else {
-            LogUtil.i(AppConfig.TAG, "Psiphon: mirror unavailable, using S3 original")
-        }
-        result.put(JSONObject().put("URL", encodeUrl(ORIGINAL_SERVER_LIST_URL)))
-        return result
-    }
-
-    /** Probes the mirror with a plain GET. Any error or an implausibly small body counts as unavailable. */
-    private fun isMirrorReachable(): Boolean {
-        var connection: HttpURLConnection? = null
-        return try {
-            connection = (URL(MIRROR_SERVER_LIST_URL).openConnection() as HttpURLConnection).apply {
-                connectTimeout = MIRROR_PROBE_TIMEOUT_MS
-                readTimeout = MIRROR_PROBE_TIMEOUT_MS
-                requestMethod = "GET"
-                instanceFollowRedirects = true
-            }
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                LogUtil.w(AppConfig.TAG, "Psiphon: mirror probe HTTP ${connection.responseCode}")
-                return false
-            }
-            // readNBytes needs API 33 on Android, and minSdk is 24, so read with a bounded loop instead.
-            var total = 0
-            connection.inputStream.use { input ->
-                val buffer = ByteArray(8192)
-                while (total < MIRROR_MAX_BYTES) {
-                    val read = input.read(buffer, 0, minOf(buffer.size, MIRROR_MAX_BYTES - total))
-                    if (read < 0) break
-                    total += read
-                }
-            }
-            if (total < MIRROR_MIN_BYTES) {
-                LogUtil.w(AppConfig.TAG, "Psiphon: mirror probe body too small ($total bytes)")
-                false
-            } else {
-                true
-            }
-        } catch (e: Exception) {
-            LogUtil.w(AppConfig.TAG, "Psiphon: mirror probe failed: ${e.message}")
-            false
-        } finally {
-            connection?.disconnect()
-        }
-    }
+    private fun remoteServerListUrls(): JSONArray =
+        JSONArray()
+            .put(JSONObject().put("URL", encodeUrl(PsiphonServerList.MIRROR_URL)))
+            .put(JSONObject().put("URL", encodeUrl(PsiphonServerList.ORIGINAL_URL)))
 
     /** Psiphon expects each remote list URL base64-encoded inside an object with a "URL" field. */
     private fun encodeUrl(url: String): String =
