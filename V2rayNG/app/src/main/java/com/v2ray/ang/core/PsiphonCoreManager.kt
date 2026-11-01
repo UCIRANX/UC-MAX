@@ -187,6 +187,7 @@ object PsiphonCoreManager {
             .put("SponsorId", SPONSOR_ID)
             .put("LocalSocksProxyPort", LOCAL_SOCKS_PORT)
             .put("LocalHttpProxyPort", 0)
+            .put("EgressRegion", EgressRegionStore.getSelectedRegion(context))
             .put("EmitDiagnosticNotices", true)
             .put("DataRootDirectory", context.filesDir.absolutePath)
             .put("RemoteServerListDownloadFilename", File(context.filesDir, "psiphon_remote_server_list").absolutePath)
