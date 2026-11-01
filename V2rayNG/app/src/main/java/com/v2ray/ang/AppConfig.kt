@@ -112,6 +112,8 @@ object AppConfig {
 
     /** Tags for different proxy modes. */
     const val TAG_PROXY = "proxy"
+    const val TAG_PSIPHON_UPSTREAM = "psiphon-upstream"
+    const val TAG_PSIPHON_EXIT = "psiphon-exit"
     const val TAG_DIRECT = "direct"
     const val TAG_BLOCKED = "block"
     const val TAG_FRAGMENT = "fragment"

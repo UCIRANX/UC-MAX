@@ -9,25 +9,24 @@ import com.v2ray.ang.handler.MmkvManager
 /**
  * تصمیم‌گیری حالت اتصال: کدام پروفایل Xray اجرا شود و Psiphon چطور بالا بیاید.
  *
- * ترتیب زنجیره (PROXYCHAIN): عضو اول خروجی نهایی است و عضو آخر اولین هاپ از سمت گوشی.
- * بنابراین برای «V2ray از طریق Psiphon» ترتیب = [پروفایل V2ray، هاپ Psiphon] است.
- * پروفایل‌های داخلی (هاپ و زنجیره) در لیست سرورها نمایش داده نمی‌شوند.
+ * ترتیب زنجیره مطابق UI: عضو اول ورودی (نزدیک گوشی) و عضو آخر خروجی (به سرور نهایی) است.
+ * - «V2ray از Psiphon»: [هاپ Psiphon، V2ray]  → گوشی → Psiphon → سرور V2ray
+ * - «Psiphon از V2ray»: outbound پیش‌فرض = هاپ Psiphon و upstream آن = V2ray (با exitGuid)
  */
 object ConnectionModeManager {
 
     /** نام ثابت پروفایل زنجیرهٔ مدیریت‌شدهٔ UC MAX */
     const val CHAIN_REMARKS = "UC MAX chain"
 
-    /** شناسهٔ ثابت زنجیرهٔ داخلی؛ در لیست سرورها دیده نمی‌شود */
-    const val CHAIN_GUID = "uc-max-chain"
-
     class Plan(
         /** شناسهٔ پروفایلی که Xray با آن اجرا می‌شود */
         val guid: String,
         /** آیا Psiphon باید بالا بیاید؟ */
         val usePsiphon: Boolean,
-        /** اگر true باشد، Psiphon بعد از Xray و با upstream از SOCKS محلی Xray بالا می‌آید */
+        /** true یعنی Psiphon بعد از Xray و با upstream از V2ray بالا می‌آید */
         val psiphonViaXray: Boolean,
+        /** پروفایل V2ray که باید خروجی مسیر Psiphon باشد (فقط در «Psiphon از V2ray») */
+        val exitGuid: String? = null,
     )
 
     fun currentMode(): ConnectionMode =
@@ -45,29 +44,34 @@ object ConnectionModeManager {
         ConnectionMode.PSIPHON_ONLY -> Plan(
             PsiphonCoreManager.createHopProfile(), usePsiphon = true, psiphonViaXray = false
         )
-        ConnectionMode.PSIPHON_VIA_V2RAY -> Plan(selectedGuid, usePsiphon = true, psiphonViaXray = true)
+        ConnectionMode.PSIPHON_VIA_V2RAY -> Plan(
+            PsiphonCoreManager.createHopProfile(),
+            usePsiphon = true,
+            psiphonViaXray = true,
+            exitGuid = selectedGuid,
+        )
         ConnectionMode.V2RAY_VIA_PSIPHON -> Plan(
-            ensureChain(selectedGuid, PsiphonCoreManager.createHopProfile()),
+            ensureChain(hopGuid = PsiphonCoreManager.createHopProfile(), v2rayGuid = selectedGuid),
             usePsiphon = true,
             psiphonViaXray = false,
         )
     }
 
-    /** ساخت یا به‌روزرسانی پروفایل زنجیرهٔ داخلی: خروجی = V2ray، ورودی = Psiphon */
-    private fun ensureChain(v2rayGuid: String, hopGuid: String): String {
-        val members = "$v2rayGuid,$hopGuid"
-        // Remove visible chain copies created by previous versions.
-        MmkvManager.decodeAllServerList().forEach { guid ->
-            val isOldChain = MmkvManager.decodeServerConfig(guid)?.let {
+    /** ساخت یا به‌روزرسانی پروفایل زنجیرهٔ مدیریت‌شده: ورودی = Psiphon، خروجی = V2ray */
+    private fun ensureChain(hopGuid: String, v2rayGuid: String): String {
+        val members = listOf(hopGuid, v2rayGuid)
+        val existingGuid = MmkvManager.decodeAllServerList().firstOrNull { guid ->
+            MmkvManager.decodeServerConfig(guid)?.let {
                 it.configType == EConfigType.PROXYCHAIN && it.remarks == CHAIN_REMARKS
             } == true
-            if (guid != CHAIN_GUID && isOldChain) {
-                MmkvManager.removeServer(guid)
-            }
         }
-        val profile = MmkvManager.decodeServerConfig(CHAIN_GUID)
-            ?: ProfileItem.create(EConfigType.PROXYCHAIN).apply { remarks = CHAIN_REMARKS }
-        profile.proxyChainProfiles = members
-        return MmkvManager.encodeInternalServerConfig(CHAIN_GUID, profile)
+        val profile = existingGuid?.let { MmkvManager.decodeServerConfig(it) }
+            ?: ProfileItem.create(EConfigType.PROXYCHAIN)
+        profile.remarks = CHAIN_REMARKS
+        profile.proxyChainProfiles = members.joinToString(",")
+        profile.description = members.joinToString(" -> ") { id ->
+            MmkvManager.decodeServerConfig(id)?.remarks ?: id
+        }
+        return MmkvManager.encodeServerConfig(existingGuid.orEmpty(), profile)
     }
 }

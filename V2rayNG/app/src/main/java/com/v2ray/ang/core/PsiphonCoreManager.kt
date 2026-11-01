@@ -35,6 +35,11 @@ object PsiphonCoreManager {
     const val LOCAL_SOCKS_HOST = "127.0.0.1"
     const val LOCAL_SOCKS_PORT = 10850
 
+    /** inbound SOCKS کانفیگ Xray که Psiphon از آن به V2ray وصل می‌شود (حالت «Psiphon از V2ray») */
+    const val PSIPHON_UPSTREAM_PORT = 10851
+
+    fun upstreamProxyUrl(): String = "socks5://127.0.0.1:$PSIPHON_UPSTREAM_PORT"
+
     // Time allowed for the tunnel to connect (not just the SOCKS port to open).
     private const val START_TIMEOUT_MS = 90_000L
     private const val PROPAGATION_CHANNEL_ID = "FFFFFFFFFFFFFFFF"

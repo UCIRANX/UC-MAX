@@ -31,7 +31,7 @@ object CoreConfigManager {
     /**
      * Build the runtime configuration for normal startup.
      */
-    fun getV2rayConfig(context: Context, guid: String): ConfigResult {
+    fun getV2rayConfig(context: Context, guid: String, psiphonExitGuid: String? = null): ConfigResult {
         try {
             val configContext = CoreConfigContextBuilder.build(context, guid)
                 ?: return ConfigResult(
@@ -42,7 +42,11 @@ object CoreConfigManager {
             if (configContext.isCustom) {
                 return buildV2rayCustomConfig(configContext)
             }
-            return toConfigResult(configContext, buildUnifiedConfig(configContext))
+            val unified = buildUnifiedConfig(configContext)
+            if (psiphonExitGuid != null) {
+                applyPsiphonUpstreamExit(unified, psiphonExitGuid)
+            }
+            return toConfigResult(configContext, unified)
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to get V2ray config", e)
             return ConfigResult(
@@ -171,6 +175,39 @@ object CoreConfigManager {
      * The analyzed outbound plan is consumed in order and converted to concrete
      * outbounds before routing, DNS, and runtime extras are assembled.
      */
+    /**
+     * حالت «Psiphon از V2ray»:
+     * ترافیک گوشی از هاپ Psiphon (outbound پیش‌فرض) خارج می‌شود و Psiphon خودش از طریق یک inbound
+     * جدا (psiphon-upstream) به Xray وصل است. این inbound فقط به پروفایل V2ray (psiphon-exit) routing می‌شود.
+     * بنابراین حلقه‌ای ایجاد نمی‌شود: Psiphon → psiphon-upstream → V2ray → اینترنت.
+     */
+    private fun applyPsiphonUpstreamExit(v2rayConfig: V2rayConfig, exitGuid: String) {
+        val exitProfile = MmkvManager.decodeServerConfig(exitGuid)
+            ?: error("پروفایل V2ray برای مسیر Psiphon پیدا نشد")
+        val exitOutbound = convertProfile2Outbound(exitProfile)
+            ?: error("پروفایل V2ray برای مسیر Psiphon قابل تبدیل نیست")
+        exitOutbound.tag = AppConfig.TAG_PSIPHON_EXIT
+        v2rayConfig.outbounds.add(exitOutbound)
+
+        v2rayConfig.inbounds.add(
+            V2rayConfig.InboundBean(
+                tag = AppConfig.TAG_PSIPHON_UPSTREAM,
+                port = PsiphonCoreManager.PSIPHON_UPSTREAM_PORT,
+                protocol = "socks",
+                listen = AppConfig.LOOPBACK,
+                settings = V2rayConfig.InboundBean.InSettingsBean(auth = "noauth", udp = true),
+            )
+        )
+        // قانون اول: ترافیک upstream Psiphon باید قبل از هر قانون دیگری به V2ray برود
+        v2rayConfig.routing.rules.add(
+            0,
+            V2rayConfig.RoutingBean.RulesBean(
+                inboundTag = listOf(AppConfig.TAG_PSIPHON_UPSTREAM),
+                outboundTag = AppConfig.TAG_PSIPHON_EXIT,
+            )
+        )
+    }
+
     private fun buildUnifiedConfig(configContext: CoreConfigContext): V2rayConfig {
         require(configContext.resolvedOutbounds.isNotEmpty()) { "resolvedOutbounds must not be empty for a non-CUSTOM context" }
         val primaryResolvedOutbound = configContext.resolvedOutbounds.first()

@@ -136,11 +136,12 @@ object CoreServiceManager {
 
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Starting core loop for ${config.remarks}")
         // Psiphon در حالت‌های تکی و «V2ray از Psiphon» (و زنجیره‌های دستی) باید قبل از Xray آماده باشد
-        val psiphonBeforeXray = plan.usePsiphon && !plan.psiphonViaXray
-        if (psiphonBeforeXray || PsiphonCoreManager.isRequiredByChain(config)) {
+        val psiphonBeforeXray = !plan.psiphonViaXray &&
+            (plan.usePsiphon || PsiphonCoreManager.isRequiredByChain(config))
+        if (psiphonBeforeXray) {
             PsiphonCoreManager.start(service)
         }
-        val result = CoreConfigManager.getV2rayConfig(service, guid)
+        val result = CoreConfigManager.getV2rayConfig(service, guid, plan.exitGuid)
         LogUtil.d(AppConfig.TAG, result.content)
         if (!result.status) {
             error(result.errorMessage.ifBlank { "Failed to get V2Ray config" })
@@ -170,7 +171,7 @@ object CoreServiceManager {
 
         // «Psiphon از V2ray»: Psiphon بعد از Xray و با upstream از SOCKS محلی Xray بالا می‌آید
         if (plan.usePsiphon && plan.psiphonViaXray) {
-            PsiphonCoreManager.start(service, "socks5://127.0.0.1:${SettingsManager.getSocksPort()}")
+            PsiphonCoreManager.start(service, PsiphonCoreManager.upstreamProxyUrl())
         }
 
         if (browserDialer != null) {

@@ -185,7 +185,11 @@ object CoreConfigContextBuilder {
         try {
             return config.proxyChainProfiles.orEmpty().split(",")
                 .asSequence()
-                .mapNotNull { remark -> SettingsManager.getServerViaRemarks(remark) }
+                .map { it.trim() }
+                .mapNotNull { token ->
+                    // ابتدا با شناسهٔ پروفایل (guid) و در غیر این صورت با نام پروفایل (remarks) جستجو می‌شود
+                    MmkvManager.decodeServerConfig(token) ?: SettingsManager.getServerViaRemarks(token)
+                }
                 .filter { it.server.isNotNullEmpty() }
                 .filter { Utils.isPureIpAddress(it.server!!) || Utils.isValidUrl(it.server!!) }
                 .filter { !it.configType.isComplexType() }
