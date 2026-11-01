@@ -1,90 +1,189 @@
-# v2rayNG
+<div align="center">
 
-A V2Ray client for Android, support [Xray core](https://github.com/XTLS/Xray-core) and [v2fly core](https://github.com/v2fly/v2ray-core)
+# 🌐 UC MAX
 
-[![API](https://img.shields.io/badge/API-24%2B-yellow.svg?style=flat)](https://developer.android.com/about/versions/lollipop)
-[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.4.0-blue.svg)](https://kotlinlang.org)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/2dust/v2rayNG)](https://github.com/2dust/v2rayNG/commits/master)
-[![CodeFactor](https://www.codefactor.io/repository/github/2dust/v2rayng/badge)](https://www.codefactor.io/repository/github/2dust/v2rayng)
-[![GitHub Releases](https://img.shields.io/github/downloads/2dust/v2rayNG/latest/total?logo=github)](https://github.com/2dust/v2rayNG/releases)
-[![Chat on Telegram](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg)](https://t.me/v2rayn)
+**کلاینت اندروید برای عبور امن و آزاد از محدودیت‌ها، با ترکیب هوشمند Psiphon و Xray (V2ray)**
 
----
+[![Telegram](https://img.shields.io/badge/Telegram-@uciranir-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/uciranir)
+[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#)
+[![License](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge)](#-مجوز)
 
-## Download / 下载
+### 📢 کانال رسمی یوسی ایران
+## **[https://t.me/uciranir](https://t.me/uciranir)**
 
-Download the latest release here:
+اخبار، آپدیت‌ها، کانفیگ‌ها و راهنماها را اینجا دنبال کنید 👇
 
-在这里下载最新版本：
+[**📥 دانلود آخرین نسخه**](../../releases) · [**💬 کانال تلگرام**](https://t.me/uciranir)
 
-[https://github.com/2dust/v2rayNG/releases](https://github.com/2dust/v2rayNG/releases)
-
-> [!TIP]
-> v2rayNG is the mobile version. For the desktop version, please visit the v2rayN \
-> v2rayNG 是手机版，电脑版请访问 v2rayN
->
-> https://github.com/2dust/v2rayN
+</div>
 
 ---
 
-### Geoip and Geosite
+## ✨ معرفی
 
-- geoip.dat and geosite.dat files are in `Android/data/com.v2ray.ang/files/assets` (path may differ on some Android device)
-- download feature will get enhanced version in this [repo](https://github.com/Loyalsoldier/v2ray-rules-dat) (note: it needs a working proxy)
-- latest official [domain list](https://github.com/Loyalsoldier/v2ray-rules-dat) and [ip list](https://github.com/Loyalsoldier/geoip) can be imported manually
-- possible to use a third-party dat file in the same folder, like [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
+**UC MAX** یک برنامهٔ اندروید است که دو موتور قدرتمند را در یک محیط ساده و فارسی کنار هم قرار می‌دهد:
 
-More in our [wiki](https://github.com/2dust/v2rayNG/wiki)
+- **Psiphon** برای دور زدن محدودیت‌ها با سرورهای متنوع و امکان انتخاب کشور خروجی
+- **Xray (V2ray)** با پشتیبانی از پروتکل‌ها و کانفیگ‌های متنوع، مسیریابی پیشرفته و قوانین ترافیک
 
-### Geoip 与 Geosite
-
-- geoip.dat 和 geosite.dat 文件位于 `Android/data/com.v2ray.ang/files/assets`（部分设备路径可能不同）
-- 下载功能将获取该 [仓库](https://github.com/Loyalsoldier/v2ray-rules-dat) 中的增强版本（注意：此功能需要一个可用的代理）
-- 最新官方 [域名列表](https://github.com/Loyalsoldier/v2ray-rules-dat) 和 [IP 列表](https://github.com/Loyalsoldier/geoip) 可手动导入
-- 也可在同一文件夹中使用第三方 dat 文件，例如 [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
-
-更多内容请见我们的 [wiki](https://github.com/2dust/v2rayNG/wiki)
+کاربر می‌تواند هر کدام را به‌تنهایی استفاده کند یا آن‌ها را به‌صورت زنجیره‌ای به هم وصل کند، و همه این‌ها را از یک صفحهٔ اصلی کنترل کند.
 
 ---
 
-## Development guide / 开发指南
+## 🚀 ویژگی‌ها
 
-### Note
+### 🔀 حالت‌های اتصال (Connection Mode)
+از روی نوار پایین، با یک لمس حالت اتصال را انتخاب کنید:
 
-- Android project under the V2rayNG folder can be compiled directly in Android Studio, or using the Gradle wrapper. But the v2ray core inside the aar is (probably) outdated.
-- The aar can be compiled from the Golang project [AndroidLibV2rayLite](https://github.com/2dust/AndroidLibV2rayLite) or [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite). For a quick start, read the guides for [Go Mobile](https://github.com/golang/go/wiki/Mobile) and [Makefiles for Go Developers](https://tutorialedge.net/golang/makefiles-for-go-developers/).
-- v2rayNG can run on Android Emulators. For WSA, VPN permission needs to be granted via `appops set [package name] ACTIVATE_VPN allow`.
+| حالت | توضیح |
+|---|---|
+| **V2ray only** | فقط Xray، بدون واسطه |
+| **Psiphon only** | فقط Psiphon، مستقیم |
+| **Psiphon via V2ray** | ترافیک Psiphon از طریق Xray عبور می‌کند |
+| **V2ray via Psiphon** | ترافیک Xray از طریق تونل Psiphon عبور می‌کند |
 
-### 提示
+### 🛰️ یکپارچگی با Psiphon
+- اتصال مستقیم با هستهٔ Psiphon و نمایش لیست کشورها
+- **انتخاب کشور خروجی** از همان لیست رسمی Psiphon، با دکمهٔ Country در صفحهٔ اصلی
+- بخش تنظیمات کامل Psiphon (Shir o Khorshid) با دکمهٔ مخصوص در نوار پایین
+- قطع فوری اتصال حتی در حین برقراری تونل
 
-- V2rayNG 文件夹下的 Android 项目可直接在 Android Studio 中编译，或使用 Gradle wrapper 编译。但 aar 内置的 v2ray core（可能）已过时。
-- aar 可由 Golang 项目 [AndroidLibV2rayLite](https://github.com/2dust/AndroidLibV2rayLite) 或 [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) 编译而成。快速入门可参考 [Go Mobile](https://github.com/golang/go/wiki/Mobile) 指南和 [Makefiles for Go Developers](https://tutorialedge.net/golang/makefiles-for-go-developers/)。
-- v2rayNG 可在 Android 模拟器上运行。对于 WSA，需要通过 `appops set [package name] ACTIVATE_VPN allow` 授予 VPN 权限。
+### 🌩️ اسکنر IP لبه‌ی آکامای (CDN Edge Scanner)
+- اسکن خودکار رنج‌های آکامای برای پیدا کردن IPهای سالم
+- اسکن دستی IP و رنج دلخواه
+- IPهای سالم به‌صورت خودکار در فیلد «CDN edge IPs» سایفون ذخیره می‌شوند
+- توقف فوری اسکن
+
+### ⚙️ Xray (V2ray) کامل
+- پشتیبانی از **Subscription** و import کانفیگ از کلیپ‌بورد، QR کد و فایل
+- **مسیریابی پیشرفته (Routing)** با قوانین دامنه، IP، پورت، پروتکل و پردازش
+- **Presetهای آماده**: China Whitelist/Blacklist، Global، Iran Whitelist و Russia Whitelist
+- ایمپورت و اکسپورت قوانین مسیریابی از طریق کلیپ‌بورد و QR کد
+- **Per-app proxy**: انتخاب برنامه‌هایی که از VPN عبور کنند یا نکنند
+- نمایش **سرعت دانلود/آپلود** در نوتیفیکیشن (به‌صورت پیش‌فرض فعال)
+- تست تأخیر (Ping) تکی و گروهی کانفیگ‌ها و مرتب‌سازی بر اساس نتیجه
+- بک‌آپ و بازیابی کامل تنظیمات
+
+### 🧭 حالت‌های اجرا
+- **VPN Mode**: تونل کامل سیستم با سرویس VPN اندروید
+- **Proxy Only**: بدون VPN، فقط با پروکسی محلی
+- **Root Mode**: پروکسی شفاف با دسترسی روت (برای دستگاه‌های روت‌شده)
+
+### 🎨 رابط کاربری
+- طراحی مدرن با **Material 3** و پشتیبانی از **تم روشن و تیره**
+- **فارسی و چند زبان** (انگلیسی، عربی، روسی، چینی، ویتنامی و …)
+- نوتیفیکیشن قابل تنظیم و کنترل از کاشی Quick Settings
+- لاگ‌گیری و نمایش لاگ داخلی برنامه
+
+### 🔐 امنیت و انتشار
+- امضای APK با keystore اختصاصی و ذخیره‌شده در Secrets
+- بیلد خودکار از طریق GitHub Actions
+- انتشار APK در بخش **Releases** برای هر نسخه
 
 ---
 
+## 📦 دانلود و نصب
 
-## GPG Verification / GPG 签名校验
+1. به بخش [**Releases**](../../releases) این صفحه بروید.
+2. فایل APK مناسب دستگاه خود را دانلود کنید:
 
-Release files are signed with GPG to verify authenticity and integrity, helping prevent mirror, ISP, or CDN hijacking.
+| فایل | مناسب برای |
+|---|---|
+| `arm64-v8a` | اکثر گوشی‌های جدید (۶۴ بیتی) |
+| `armeabi-v7a` | گوشی‌های قدیمی (۳۲ بیتی) |
+| `universal` | همهٔ دستگاه‌ها (حجم بیشتر) |
 
-发布文件已使用 GPG 签名，可用于校验文件真实性与完整性，预防镜像站、运营商或 CDN 劫持。
+3. APK را نصب کنید و اجازه‌های لازم (اعلان، VPN) را بدهید.
 
-### Fingerprint / 公钥指纹
+> 💡 **پیشنهاد:** اگر دستگاه شما نسخهٔ جدید اندروید دارد و نمی‌دانید کدام فایل را بردارید، نسخهٔ `arm64-v8a` را نصب کنید.
 
-```text
-7694 5E9F 3E9A 168F 8070 F195 805D 661C
-134D FAF6 8903 C199 463C 31E5 AE90 3AE0
+---
+
+## 🧭 راهنمای سریع
+
+1. **افزودن کانفیگ:** از منوی `+` در بالای صفحه، کانفیگ یا Subscription اضافه کنید.
+2. **انتخاب حالت اتصال:** روی دکمهٔ اول نوار پایین بزنید و حالت دلخواه را انتخاب کنید.
+3. **انتخاب کشور (Psiphon):** دکمهٔ **Country** را بزنید و کشور خروجی را انتخاب کنید. اگر اتصال برقرار باشد، تونل دوباره راه‌اندازی می‌شود.
+4. **اتصال:** دکمهٔ Play را بزنید. برای قطع، همان دکمه را دوباره بزنید.
+5. **اسکنر IP:** دکمهٔ **IP scanner** را بزنید تا IPهای سالم آکامای پیدا و ذخیره شوند.
+
+---
+
+## 🛠️ ساخت از سورس
+
+### پیش‌نیازها
+- **JDK 21**
+- **Android SDK** با پلتفرم `android-37.0` و `build-tools 37.0.0`
+- **Android NDK** نسخهٔ `30.0.16248370`
+- **Go 1.22** (برای ساخت باینری Psiphon)
+
+### مراحل
+```bash
+git clone --recursive https://github.com/UCIRANX/UC-MAX.git
+cd UC-MAX/V2rayNG
+echo "sdk.dir=$ANDROID_HOME" > local.properties
+./gradlew assemblePlaystoreRelease
 ```
 
+APKهای خروجی در مسیر `V2rayNG/app/build/outputs/apk/playstore/release/` قرار می‌گیرند.
+
+> ⚠️ برای بیلد کامل، باینری `libpsiphon.so` و کتابخانه‌های native (`hev-socks5-tunnel` و `libv2ray.aar`) لازم‌اند. workflow داخل `.github/workflows/build.yml` همهٔ این مراحل را خودکار انجام می‌دهد.
+
 ---
 
-## Community / 社区
+## 🤖 GitHub Actions
 
-Telegram Group / Telegram 群组：
+| Workflow | کاربرد |
+|---|---|
+| `build.yml` | بیلد سه APK (arm64، armeabi-v7a و universal) و انتشار در Releases |
+| `apply-zip.yml` | اعمال زیپ پروژه روی ریپو و اجرای بیلد |
+| `keystore-bootstrap.yml` | ساخت یک‌باره keystore و ذخیره در Secrets |
 
-[https://t.me/v2rayN](https://t.me/v2rayN)
+---
 
-Telegram Channel / Telegram 频道：
+## ❓ سؤالات پرتکرار
 
-[https://t.me/github_2dust](https://t.me/github_2dust)
+**چرا اتصال برقرار نمی‌شود؟**
+ابتدا حالت اتصال و کشور را بررسی کنید. اگر Psiphon انتخاب شده، از اسکنر IP استفاده کنید و سپس دوباره تلاش کنید. اگر مشکل ادامه داشت، در [کانال تلگرام](https://t.me/uciranir) مطرح کنید.
+
+**چرا کشور انتخابی من اعمال نمی‌شود؟**
+مطمئن شوید که اتصال Psiphon فعال است و کشور از لیست موجود انتخاب شده. هر تغییر کشور هنگام اتصال، تونل را دوباره راه‌اندازی می‌کند.
+
+**آیا برنامه رایگان است؟**
+بله. UC MAX متن‌باز است و هیچ هزینه‌ای ندارد.
+
+---
+
+## 🤝 مشارکت و پشتیبانی
+
+- 🐛 **گزارش باگ:** در بخش Issues یا کانال تلگرام
+- 💡 **پیشنهاد ویژگی:** از طریق Issues یا [کانال تلگرام](https://t.me/uciranir)
+- 🔀 **Pull Request:** خوش‌آمدید؛ لطفاً قبل از ارسال، تغییرات را توضیح دهید.
+
+---
+
+## 🙏 تشکر
+
+این پروژه بر پایهٔ کارهای متن‌باز زیر ساخته شده است:
+- [**Psiphon**](https://psiphon.ca) برای هستهٔ تونل
+- [**Xray-core**](https://github.com/XTLS/Xray-core) و [**AndroidLibXrayLite**](https://github.com/2dust/AndroidLibXrayLite)
+- [**hev-socks5-tunnel**](https://github.com/heiher/hev-socks5-tunnel)
+- [**v2rayNG**](https://github.com/2dust/v2rayNG) به‌عنوان پایهٔ رابط کاربری
+
+---
+
+## 📜 مجوز
+
+این پروژه تحت مجوز **GNU GPLv3** منتشر شده است. جزئیات در فایل `LICENSE` آمده است.
+
+---
+
+<div align="center">
+
+### 💙 به یوسی ایران بپیوندید
+
+**[https://t.me/uciranir](https://t.me/uciranir)**
+
+ساخته‌شده با عشق برای آزادی اینترنت 🌍
+
+</div>
