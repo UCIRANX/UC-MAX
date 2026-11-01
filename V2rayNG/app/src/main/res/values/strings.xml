@@ -575,4 +575,13 @@
     <string name="connection_mode_psiphon_via_v2ray_desc">Chained</string>
     <string name="connection_mode_v2ray_via_psiphon">V2ray via Psiphon</string>
     <string name="connection_mode_v2ray_via_psiphon_desc">Chained</string>
+    <string name="cdn_scanner_button">IP scanner</string>
+    <string name="cdn_scanner_title">Akamai IP scanner</string>
+    <string name="cdn_scanner_ranges">Ranges (one random IP per range each round)</string>
+    <string name="cdn_scanner_manual">Manual IPs / ranges (comma, space or new line)</string>
+    <string name="cdn_scanner_scan_ranges">Scan ranges</string>
+    <string name="cdn_scanner_scan_manual">Scan manual</string>
+    <string name="cdn_scanner_stop">Stop</string>
+    <string name="cdn_scanner_close">Close</string>
+    <string name="cdn_scanner_progress">Scanned %1$d | Healthy %2$d | Saved %3$d</string>
 </resources>

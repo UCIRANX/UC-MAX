@@ -54,6 +54,8 @@ object LauncherManager {
     }
 
     fun stopService(context: Context) {
+        // لغو فوری راه‌اندازی Psiphon در حال انجام، تا دکمهٔ قطع همیشه جواب بدهد
+        PsiphonCoreManager.cancelPending()
         //context.toast(R.string.toast_services_stop)
         MessageHelper.sendMsg2Service(context, AppConfig.MSG_STATE_STOP, "")
     }

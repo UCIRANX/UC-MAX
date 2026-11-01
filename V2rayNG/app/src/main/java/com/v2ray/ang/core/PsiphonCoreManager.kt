@@ -13,6 +13,7 @@ import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.util.concurrent.CancellationException
 
 /**
  * مدیریت هستهٔ Psiphon (باینری libpsiphon.so).
@@ -35,6 +36,24 @@ object PsiphonCoreManager {
 
     @Volatile
     private var tunnel: PsiphonTunnel? = null
+
+    /** انتظارهای در حال اجرای start؛ برای لغو فوری با دکمهٔ قطع */
+    @Volatile
+    private var pendingPort: CompletableDeferred<Unit>? = null
+
+    @Volatile
+    private var pendingTunnel: CompletableDeferred<Unit>? = null
+
+    /**
+     * لغو فوری راه‌اندازی در حال انجام (بدون قفل، تا از UI همیشه بتواند قطع کند).
+     * start با خطا برمی‌گردد و هسته هم متوقف می‌شود.
+     */
+    fun cancelPending() {
+        val cancelled = CancellationException("Psiphon start cancelled by user")
+        pendingPort?.completeExceptionally(cancelled)
+        pendingTunnel?.completeExceptionally(cancelled)
+        tunnel?.stop()
+    }
 
     fun upstreamProxyUrl(): String = "socks5://127.0.0.1:$PSIPHON_UPSTREAM_PORT"
 
@@ -116,6 +135,8 @@ object PsiphonCoreManager {
 
         val psiphon = PsiphonTunnel.newPsiphonTunnel(host)
         tunnel = psiphon
+        pendingPort = portReady
+        pendingTunnel = tunnelConnected
         try {
             psiphon.startTunneling(EmbeddedValues.EMBEDDED_SERVER_LIST.joinToString("\n"))
             // ترتیب ایمنی: ترافیک زنجیره بدون تونل آماده نباید خارج شود. انتظار حتماً محدود است.
@@ -129,6 +150,9 @@ object PsiphonCoreManager {
             LogUtil.e(AppConfig.TAG, "Psiphon: راه‌اندازی ناموفق بود", e)
             stop()
             throw IllegalStateException("راه‌اندازی Psiphon ناموفق بود: ${e.message}", e)
+        } finally {
+            pendingPort = null
+            pendingTunnel = null
         }
     }
 
@@ -158,6 +182,25 @@ object PsiphonCoreManager {
             .put("RemoteServerListSignaturePublicKey", EmbeddedValues.REMOTE_SERVER_LIST_SIGNATURE_PUBLIC_KEY)
         if (!upstreamProxyUrl.isNullOrBlank()) {
             json.put("UpstreamProxyUrl", upstreamProxyUrl)
+        }
+        // IPهای سالم اسکنر (آکامای) به‌عنوان دامنه‌های dial مسیر CDN به Psiphon داده می‌شوند
+        val edgeIps = CdnIpScanner.savedIps()
+        if (edgeIps.isNotEmpty()) {
+            val overrides = JSONArray()
+            edgeIps.forEachIndexed { index, ip ->
+                overrides.put(
+                    JSONObject()
+                        .put("OverrideID", "uc-max-edge-$index")
+                        .put("MatchDialAddressRegexes", JSONArray().put(".*"))
+                        .put("DialAddresses", JSONArray().put(ip))
+                        .put("SNIServerName", CdnIpScanner.PROBE_SNI)
+                        .put("VerifyServerNames", JSONArray().put(CdnIpScanner.PROBE_SNI).put("a248.e.akamai.net"))
+                        .put("ALPNProtocols", JSONArray().put("http/1.1"))
+                        .put("TLSProfile", "Chrome-83")
+                )
+            }
+            json.put("FrontedMeekDialOverrides", overrides)
+            json.put("FrontedMeekDialOverridesProbability", 1.0)
         }
         return json.toString()
     }

@@ -574,4 +574,13 @@
     <string name="connection_mode_psiphon_via_v2ray_desc">زنجیره‌ای</string>
     <string name="connection_mode_v2ray_via_psiphon">V2ray از Psiphon</string>
     <string name="connection_mode_v2ray_via_psiphon_desc">زنجیره‌ای</string>
+    <string name="cdn_scanner_button">اسکن IP</string>
+    <string name="cdn_scanner_title">اسکن IP آکامای</string>
+    <string name="cdn_scanner_ranges">رنج‌ها (هر دور یک IP تصادفی از هر رنج)</string>
+    <string name="cdn_scanner_manual">IP یا رنج دستی (با کاما، فاصله یا خط جدید)</string>
+    <string name="cdn_scanner_scan_ranges">اسکن رنج‌ها</string>
+    <string name="cdn_scanner_scan_manual">اسکن دستی</string>
+    <string name="cdn_scanner_stop">توقف</string>
+    <string name="cdn_scanner_close">بستن</string>
+    <string name="cdn_scanner_progress">اسکن‌شده: %1$d | سالم: %2$d | ذخیره‌شده: %3$d</string>
 </resources>
