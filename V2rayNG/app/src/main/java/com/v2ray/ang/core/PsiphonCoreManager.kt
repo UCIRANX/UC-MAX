@@ -156,9 +156,15 @@ object PsiphonCoreManager {
         }
     }
 
-    /** توقف Psiphon؛ فراخوانی تکراری بی‌اثر است. */
-    @Synchronized
+    /**
+     * توقف فوری Psiphon. عمداً قفل ندارد: start تا ۹۰ ثانیه قفل را نگه می‌دارد و دکمهٔ قطع
+     * نباید پشت آن منتظر اتصال بماند. ابتدا انتظارهای در حال اجرا لغو می‌شوند.
+     * فراخوانی تکراری بی‌اثر است.
+     */
     fun stop() {
+        val cancelled = CancellationException("Psiphon stopped by user")
+        pendingPort?.completeExceptionally(cancelled)
+        pendingTunnel?.completeExceptionally(cancelled)
         val current = tunnel ?: return
         tunnel = null
         try {
@@ -184,7 +190,7 @@ object PsiphonCoreManager {
             json.put("UpstreamProxyUrl", upstreamProxyUrl)
         }
         // IPهای سالم اسکنر (آکامای) به‌عنوان دامنه‌های dial مسیر CDN به Psiphon داده می‌شوند
-        val edgeIps = CdnIpScanner.savedIps()
+        val edgeIps = CdnIpScanner.savedIps(context)
         if (edgeIps.isNotEmpty()) {
             val overrides = JSONArray()
             edgeIps.forEachIndexed { index, ip ->

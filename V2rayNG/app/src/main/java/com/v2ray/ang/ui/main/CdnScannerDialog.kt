@@ -58,7 +58,6 @@ fun CdnScannerDialog(onDismiss: () -> Unit) {
                         R.string.cdn_scanner_progress,
                         state.scanned,
                         state.healthy,
-                        state.saved,
                     )
                 )
             }

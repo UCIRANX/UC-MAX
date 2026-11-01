@@ -2,7 +2,7 @@ package com.v2ray.ang.core
 
 import android.content.Context
 import com.v2ray.ang.AppConfig
-import com.v2ray.ang.handler.MmkvManager
+import com.psiphon3.psiphonlibrary.CdnEdgeIpPreferences
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -312,12 +312,7 @@ object CdnIpScanner {
         "23.192.0.0/11",
     )
 
-    const val SAVED_IPS_KEY = "pref_cdn_edge_ips"
     const val PROBE_SNI = "www.akamai.com"
-
-    /** نام فایل تنظیمات Psiphon و کلید فیلد «CDN edge IPs» (همان مقادیر منابع Psiphon) */
-    private const val PSIPHON_PREFS_NAME = "moreOptionsPreferencesName"
-    private const val PSIPHON_CDN_IP_KEY = "cdnFrontingCustomIpListPreference"
 
     private const val CONCURRENCY = 40
     private const val MAX_RUN_TESTED = 2_000_000
@@ -328,10 +323,9 @@ object CdnIpScanner {
         val running: Boolean = false,
         val scanned: Int = 0,
         val healthy: Int = 0,
-        val saved: Int = 0,
     )
 
-    private val _state = MutableStateFlow(State(saved = savedIps().size))
+    private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -340,6 +334,8 @@ object CdnIpScanner {
     private val runTested = LinkedHashSet<String>()
     private var job: Job? = null
     private var appContext: Context? = null
+    /** آیا در اجرای فعلی حداقل یک IP سالم پیدا و ذخیره شده است؛ تا قبل از آن لیست قبلی دست‌نخورده می‌ماند */
+    private var runHasHealthy = false
 
     fun parseEntries(text: String): List<String> =
         text.split(Regex("[,\\s]+")).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
@@ -349,8 +345,9 @@ object CdnIpScanner {
         return parts.size == 4 && parts.all { part -> part.toIntOrNull()?.let { it in 0..255 } == true }
     }
 
-    fun savedIps(): List<String> =
-        parseEntries(MmkvManager.decodeSettingsString(SAVED_IPS_KEY, "").orEmpty()).filter { isIpv4(it) }
+    /** IPهای سالم ذخیره‌شده = فیلد «CDN edge IPs» در تنظیمات Psiphon (منبع واحد حقیقت، بین پروسه‌ها امن) */
+    fun savedIps(context: Context): List<String> =
+        parseEntries(CdnEdgeIpPreferences.load(context)).filter { isIpv4(it) }
 
     /**
      * IP تصادفی از یک ورودی:
@@ -427,7 +424,8 @@ object CdnIpScanner {
         val scanned = AtomicInteger(0)
         val healthy = AtomicInteger(0)
         synchronized(runTested) { runTested.clear() }
-        _state.value = State(running = true, saved = savedIps().size)
+        synchronized(saveLock) { runHasHealthy = false }
+        _state.value = State(running = true)
 
         job = scope.launch {
             val semaphore = Semaphore(CONCURRENCY)
@@ -447,13 +445,12 @@ object CdnIpScanner {
                                     if (!isActive) return@withPermit
                                     val ok = probe(ip)
                                     val done = scanned.incrementAndGet()
-                                    var savedCount = _state.value.saved
                                     if (ok) {
                                         healthy.incrementAndGet()
-                                        savedCount = saveIp(ip)
+                                        saveIp(ip)
                                     }
                                     _state.update {
-                                        it.copy(scanned = done, healthy = healthy.get(), saved = savedCount)
+                                        it.copy(scanned = done, healthy = healthy.get())
                                     }
                                 }
                             }
@@ -475,17 +472,17 @@ object CdnIpScanner {
         _state.update { it.copy(running = false) }
     }
 
-    /** ذخیرهٔ یک IP سالم و همگام‌سازی با فیلد CDN edge IPs در Psiphon؛ تعداد کل ذخیره‌شده را برمی‌گرداند */
-    private fun saveIp(ip: String): Int = synchronized(saveLock) {
-        val all = savedIps().toMutableList()
-        if (ip !in all) {
-            all.add(ip)
-            MmkvManager.encodeSettings(SAVED_IPS_KEY, all.joinToString(","))
-            appContext?.getSharedPreferences(PSIPHON_PREFS_NAME, Context.MODE_PRIVATE)
-                ?.edit()
-                ?.putString(PSIPHON_CDN_IP_KEY, all.joinToString(", "))
-                ?.apply()
+    /**
+     * ذخیرهٔ IP سالم در فیلد «CDN edge IPs» Psiphon.
+     * قانون: اولین IP سالم هر اسکن، لیست قبلی را پاک می‌کند؛ اگر اسکن جدید IP سالم نداشته باشد، لیست قبلی می‌ماند.
+     */
+    private fun saveIp(ip: String) {
+        synchronized(saveLock) {
+            val ctx = appContext ?: return
+            val all = if (runHasHealthy) savedIps(ctx).toMutableList() else mutableListOf()
+            runHasHealthy = true
+            if (ip !in all) all.add(ip)
+            CdnEdgeIpPreferences.save(ctx, all.joinToString(", "))
         }
-        all.size
     }
 }

@@ -57,6 +57,10 @@ object CoreServiceManager {
     @Volatile
     private var isReloading = false
 
+    /** کاربر قطع را خواسته؛ جلوی ادامهٔ راه‌اندازی (مثلاً Psiphon بعد از Xray) را می‌گیرد */
+    @Volatile
+    private var stopRequested = false
+
     /** Tun descriptor the core was started with, null in the proxy only and root run modes. */
     private var currentVpnInterface: ParcelFileDescriptor? = null
 
@@ -100,6 +104,7 @@ object CoreServiceManager {
             return false
         }
 
+        stopRequested = false
         try {
             doStartCoreLoop(service, vpnInterface)
             return true
@@ -107,8 +112,12 @@ object CoreServiceManager {
             val message = e.message?.takeUnless { it.isBlank() } ?: e.javaClass.simpleName
             LogUtil.e(AppConfig.TAG, "StartCore-Manager: $message", e)
             PsiphonCoreManager.stop()
-            MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_FAILURE, message)
             NotificationManager.cancelNotification()
+            if (stopRequested) {
+                LogUtil.i(AppConfig.TAG, "StartCore-Manager: start cancelled by user")
+                return false
+            }
+            MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_FAILURE, message)
             return false
         }
     }
@@ -139,6 +148,7 @@ object CoreServiceManager {
         val psiphonBeforeXray = !plan.psiphonViaXray &&
             (plan.usePsiphon || PsiphonCoreManager.isRequiredByChain(config))
         if (psiphonBeforeXray) {
+            checkNotStopped()
             PsiphonCoreManager.start(service)
         }
         val result = CoreConfigManager.getV2rayConfig(service, guid, plan.exitGuid, plan.usePsiphon)
@@ -168,9 +178,14 @@ object CoreServiceManager {
         if (!isRunning()) {
             error("Core failed to start")
         }
+        if (stopRequested) {
+            runCatching { coreController.stopLoop() }
+            error("Core start cancelled by user")
+        }
 
         // «Psiphon از V2ray»: Psiphon بعد از Xray و با upstream از SOCKS محلی Xray بالا می‌آید
         if (plan.usePsiphon && plan.psiphonViaXray) {
+            checkNotStopped()
             PsiphonCoreManager.start(service, PsiphonCoreManager.upstreamProxyUrl())
         }
 
@@ -205,6 +220,7 @@ object CoreServiceManager {
      * @return True if the core was stopped successfully, false otherwise.
      */
     fun stopCoreLoop(): Boolean {
+        stopRequested = true
         connectionTestScope.coroutineContext.cancelChildren()
         val service = getService() ?: return false
 
@@ -240,6 +256,10 @@ object CoreServiceManager {
         }
 
         return true
+    }
+
+    private fun checkNotStopped() {
+        if (stopRequested) error("Core start cancelled by user")
     }
 
     /**
