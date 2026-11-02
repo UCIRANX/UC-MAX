@@ -46,6 +46,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.Image
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.ui.platform.LocalContext
@@ -262,17 +264,12 @@ private fun CompactButton(
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(26.dp),
-            )
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
+        Image(
+            painter = painterResource(icon),
+            contentDescription = text,
+            modifier = Modifier
+                .fillMaxHeight(0.85f)
+                .aspectRatio(1f),
+        )
     }
 }
