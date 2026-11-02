@@ -260,7 +260,7 @@ private fun CompactButton(
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier,
+        modifier = modifier.height(64.dp),
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
