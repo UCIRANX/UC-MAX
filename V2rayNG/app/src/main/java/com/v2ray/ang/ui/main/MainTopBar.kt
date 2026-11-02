@@ -87,9 +87,6 @@ fun MainTopBar(
                     )
                 }
             }
-            IconButton(onClick = { NewThemeState.set(true) }) {
-                Text(text = "NEW", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            }
             Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                 IconButton(onClick = { showImportMenu = true }) {
                     Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = stringResource(R.string.acc_add))
