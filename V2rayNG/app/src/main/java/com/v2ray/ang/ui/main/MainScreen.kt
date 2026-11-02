@@ -40,6 +40,10 @@ fun MainScreen(
     onAction: (MainAction) -> Unit,
     onNavigate: (MainDestination) -> Unit,
 ) {
+    if (NewThemeState.enabled) {
+        NewThemeMainScreen(mainViewModel = mainViewModel, onAction = onAction, onNavigate = onNavigate)
+        return
+    }
     val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val groups = uiState.groups
     val isLoading by mainViewModel.isLoading.collectAsStateWithLifecycle()
