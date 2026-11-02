@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -89,9 +93,16 @@ private fun ModeOption(
             if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
         ),
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Text(text = stringResource(mode.titleRes()), style = MaterialTheme.typography.bodyMedium)
-            Text(text = stringResource(mode.descRes()), style = MaterialTheme.typography.bodySmall)
+        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(mode.iconRes()),
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+            )
+            Column(modifier = Modifier.padding(start = 8.dp)) {
+                Text(text = stringResource(mode.titleRes()), style = MaterialTheme.typography.bodyMedium)
+                Text(text = stringResource(mode.descRes()), style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }

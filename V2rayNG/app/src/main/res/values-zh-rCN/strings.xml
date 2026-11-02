@@ -562,4 +562,5 @@
     <string name="sub_info_open_page">打开订阅信息页面</string>
     <string name="sub_info_unlimited">无限制</string>
 
+    <string name="menu_item_import_more_options">更多选项</string>
 </resources>

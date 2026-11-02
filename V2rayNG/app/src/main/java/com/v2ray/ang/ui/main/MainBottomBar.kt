@@ -44,6 +44,8 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.Image
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.ui.platform.LocalContext
@@ -99,24 +101,28 @@ fun MainBottomBar(
             ) {
                 CompactButton(
                     text = stringResource(connectionMode.titleRes()),
+                    icon = connectionMode.iconRes(),
                     enabled = !isRunning && !isConnecting,
                     modifier = Modifier.weight(1f),
                     onClick = { showModePicker = true }
                 )
                 CompactButton(
                     text = stringResource(R.string.cdn_scanner_button),
+                    icon = R.drawable.ic_btn_ip_scanner,
                     enabled = true,
                     modifier = Modifier.weight(1f),
                     onClick = { showCdnScanner = true }
                 )
                 CompactButton(
                     text = stringResource(R.string.bottom_psiphon),
+                    icon = R.drawable.ic_btn_psiphon,
                     enabled = true,
                     modifier = Modifier.weight(1f),
                     onClick = { onNavigate(MainDestination.Psiphon) }
                 )
                 CompactButton(
                     text = stringResource(R.string.bottom_country),
+                    icon = R.drawable.ic_btn_country,
                     enabled = true,
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -233,9 +239,18 @@ fun MainBottomBar(
     }
 }
 
+@DrawableRes
+internal fun ConnectionMode.iconRes(): Int = when (this) {
+    ConnectionMode.V2RAY_ONLY -> R.drawable.ic_mode_v2ray_only
+    ConnectionMode.PSIPHON_ONLY -> R.drawable.ic_mode_psiphon_only
+    ConnectionMode.PSIPHON_VIA_V2RAY -> R.drawable.ic_mode_psiphon_via_v2ray
+    ConnectionMode.V2RAY_VIA_PSIPHON -> R.drawable.ic_mode_v2ray_via_psiphon
+}
+
 @Composable
 private fun CompactButton(
     text: String,
+    icon: Int,
     enabled: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
@@ -247,10 +262,17 @@ private fun CompactButton(
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            textAlign = TextAlign.Center,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(26.dp),
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }

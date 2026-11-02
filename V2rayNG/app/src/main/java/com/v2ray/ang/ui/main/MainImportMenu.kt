@@ -1,5 +1,11 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -59,11 +65,26 @@ internal fun serverMenuActions(
 }
 
 @Composable
-fun ImportMenuContent(onAction: (MainAction) -> Unit) = AppDropdownMenuItems(
-    items = ImportMenuAction.entries,
-    labelRes = { it.labelRes },
-    onSelected = { onAction(it.action) }
-)
+fun ImportMenuContent(onAction: (MainAction) -> Unit) {
+    var showAll by remember { mutableStateOf(false) }
+    if (showAll) {
+        AppDropdownMenuItems(
+            items = ImportMenuAction.entries,
+            labelRes = { it.labelRes },
+            onSelected = { onAction(it.action) }
+        )
+    } else {
+        AppDropdownMenuItems(
+            items = ImportMenuAction.entries.take(3),
+            labelRes = { it.labelRes },
+            onSelected = { onAction(it.action) }
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.menu_item_import_more_options)) },
+            onClick = { showAll = true }
+        )
+    }
+}
 
 @Composable
 fun MoreMenuContent(onSelected: (MainMoreMenuAction) -> Unit) = AppDropdownMenuItems(
